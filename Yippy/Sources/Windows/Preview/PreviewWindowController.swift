@@ -34,7 +34,7 @@ class PreviewWindowController: NSWindowController {
         let window = NSWindow(contentRect: .zero, styleMask: .borderless, backing: .buffered, defer: true)
         window.level = NSWindow.Level(NSWindow.Level.mainMenu.rawValue - 1)
         window.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
-        window.isOpaque = false
+        window.isOpaque = true
         window.backgroundColor = .clear
         let previewWC = PreviewWindowController(window: window)
         
@@ -42,7 +42,8 @@ class PreviewWindowController: NSWindowController {
         previewWC.previewImageViewController = createPreviewViewController()
         previewWC.previewQLViewController = createPreviewViewController()
         previewWC.safariPreviewController = createPreviewViewController()
-        
+
+
         State.main.showsRichText.distinctUntilChanged().subscribe(onNext: previewWC.onShowsRichText).disposed(by: previewWC.disposeBag)
         
         return previewWC
