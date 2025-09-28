@@ -55,8 +55,11 @@ struct YippyView: View {
                     viewModel.runSearch()
                 }
                 .padding(.horizontal, 16)
-                .padding(.bottom, 16)
-                
+                .padding(.bottom, 8)
+
+                HistoryCategoryPickerView(viewModel: viewModel)
+                    .padding(.bottom, 8)
+
                 YippyHistoryTableView(viewModel: viewModel)
                     .onAppear(perform: viewModel.onAppear)
             }

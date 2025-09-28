@@ -155,9 +155,10 @@
 		DB9340842B7B906200157394 /* HistoryColorCellView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DB9340832B7B906200157394 /* HistoryColorCellView.swift */; };
 		DB9340872B7B930700157394 /* EasySkeleton in Frameworks */ = {isa = PBXBuildFile; productRef = DB9340862B7B930700157394 /* EasySkeleton */; };
 		DB9340892B7B96C600157394 /* HistoryCellView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DB9340882B7B96C600157394 /* HistoryCellView.swift */; };
-		DB93408B2B7B98FE00157394 /* HistoryFileThumbnailCellView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DB93408A2B7B98FE00157394 /* HistoryFileThumbnailCellView.swift */; };
-		DB93408D2B7B9D8C00157394 /* HistoryItem+Transferrable.swift in Sources */ = {isa = PBXBuildFile; fileRef = DB93408C2B7B9D8C00157394 /* HistoryItem+Transferrable.swift */; };
-		DBF3F3742B7BB77300581C6B /* SafariPreviewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = DBF3F3732B7BB77300581C6B /* SafariPreviewController.swift */; };
+                DB93408B2B7B98FE00157394 /* HistoryFileThumbnailCellView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DB93408A2B7B98FE00157394 /* HistoryFileThumbnailCellView.swift */; };
+                DB93408D2B7B9D8C00157394 /* HistoryItem+Transferrable.swift in Sources */ = {isa = PBXBuildFile; fileRef = DB93408C2B7B9D8C00157394 /* HistoryItem+Transferrable.swift */; };
+                DBB4A0B12C0F0A8B00123456 /* HistoryCategoryPickerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DBB4A0B02C0F0A8B00123456 /* HistoryCategoryPickerView.swift */; };
+                DBF3F3742B7BB77300581C6B /* SafariPreviewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = DBF3F3732B7BB77300581C6B /* SafariPreviewController.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -311,9 +312,10 @@
 		DB9340812B7B905300157394 /* HistoryCellSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HistoryCellSettings.swift; sourceTree = "<group>"; };
 		DB9340832B7B906200157394 /* HistoryColorCellView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HistoryColorCellView.swift; sourceTree = "<group>"; };
 		DB9340882B7B96C600157394 /* HistoryCellView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HistoryCellView.swift; sourceTree = "<group>"; };
-		DB93408A2B7B98FE00157394 /* HistoryFileThumbnailCellView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HistoryFileThumbnailCellView.swift; sourceTree = "<group>"; };
-		DB93408C2B7B9D8C00157394 /* HistoryItem+Transferrable.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "HistoryItem+Transferrable.swift"; sourceTree = "<group>"; };
-		DBF3F3732B7BB77300581C6B /* SafariPreviewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SafariPreviewController.swift; sourceTree = "<group>"; };
+                DB93408A2B7B98FE00157394 /* HistoryFileThumbnailCellView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HistoryFileThumbnailCellView.swift; sourceTree = "<group>"; };
+                DB93408C2B7B9D8C00157394 /* HistoryItem+Transferrable.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "HistoryItem+Transferrable.swift"; sourceTree = "<group>"; };
+                DBB4A0B02C0F0A8B00123456 /* HistoryCategoryPickerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HistoryCategoryPickerView.swift; sourceTree = "<group>"; };
+                DBF3F3732B7BB77300581C6B /* SafariPreviewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SafariPreviewController.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -749,13 +751,14 @@
 		};
 		DB8E793D2B7AD1EE006860F1 /* SwiftUI */ = {
 			isa = PBXGroup;
-			children = (
-				DB9340702B7B801B00157394 /* Cells */,
-				DB8E793B2B7AD158006860F1 /* YippyView.swift */,
-				DB8E793E2B7AD1F8006860F1 /* YippyViewModel.swift */,
-				DB93406E2B7AE28800157394 /* BlurView.swift */,
-				DB9340812B7B905300157394 /* HistoryCellSettings.swift */,
-			);
+                        children = (
+                                DB9340702B7B801B00157394 /* Cells */,
+                                DB8E793B2B7AD158006860F1 /* YippyView.swift */,
+                                DB8E793E2B7AD1F8006860F1 /* YippyViewModel.swift */,
+                                DB93406E2B7AE28800157394 /* BlurView.swift */,
+                                DB9340812B7B905300157394 /* HistoryCellSettings.swift */,
+                                DBB4A0B02C0F0A8B00123456 /* HistoryCategoryPickerView.swift */,
+                        );
 			path = SwiftUI;
 			sourceTree = "<group>";
 		};
@@ -967,10 +970,11 @@
 				DB93406F2B7AE28800157394 /* BlurView.swift in Sources */,
 				DB93408D2B7B9D8C00157394 /* HistoryItem+Transferrable.swift in Sources */,
 				34B2FD9722F98C4E0068D50A /* NSMenu+Functional.swift in Sources */,
-				DB8E793F2B7AD1F8006860F1 /* YippyViewModel.swift in Sources */,
-				345B14B12341AF1900C2D0DA /* KeyPressHelperMock.swift in Sources */,
-				DB8E793C2B7AD158006860F1 /* YippyView.swift in Sources */,
-				345B14AF2341AEEA00C2D0DA /* KeyPressHelper.swift in Sources */,
+                                DB8E793F2B7AD1F8006860F1 /* YippyViewModel.swift in Sources */,
+                                345B14B12341AF1900C2D0DA /* KeyPressHelperMock.swift in Sources */,
+                                DB8E793C2B7AD158006860F1 /* YippyView.swift in Sources */,
+                                DBB4A0B12C0F0A8B00123456 /* HistoryCategoryPickerView.swift in Sources */,
+                                345B14AF2341AEEA00C2D0DA /* KeyPressHelper.swift in Sources */,
 				341D9D31233725CA008A2BE6 /* KeyUpEventMonitor.swift in Sources */,
 				340FB43B236407D70053D82C /* Controller.swift in Sources */,
 				34E56483235E777E00E362CF /* NSTextCheckingResult+Groups.swift in Sources */,

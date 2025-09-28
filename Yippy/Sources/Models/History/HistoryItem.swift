@@ -12,6 +12,71 @@ import Quartz
 
 /// Interface for an item that was on the pasteboard
 class HistoryItem: NSObject, Identifiable {
+
+    struct Metadata: Codable, Equatable {
+
+        enum Category: String, Codable, CaseIterable {
+            case text
+            case code
+            case photo
+            case video
+            case url
+            case color
+            case file
+            case other
+
+            var displayName: String {
+                switch self {
+                case .text:
+                    return "Text"
+                case .code:
+                    return "Code"
+                case .photo:
+                    return "Photos"
+                case .video:
+                    return "Videos"
+                case .url:
+                    return "URLs"
+                case .color:
+                    return "Colors"
+                case .file:
+                    return "Files"
+                case .other:
+                    return "Other"
+                }
+            }
+        }
+
+        var category: Category
+        var originBundleId: String?
+        var originApplicationName: String?
+
+        init(
+            category: Category = .other,
+            originBundleId: String? = nil,
+            originApplicationName: String? = nil
+        ) {
+            self.category = category
+            self.originBundleId = originBundleId
+            self.originApplicationName = originApplicationName
+        }
+
+        var sourceDisplayName: String {
+            if let originApplicationName = originApplicationName, !originApplicationName.isEmpty {
+                return originApplicationName
+            }
+            if let originBundleId = originBundleId, !originBundleId.isEmpty {
+                let components = originBundleId.split(separator: ".")
+                if let last = components.last {
+                    return last.capitalized
+                }
+                return originBundleId
+            }
+            return "Unknown App"
+        }
+    }
+
+    static let metadataFileName = "metadata.json"
     
     var id: UUID {
         return fsId
@@ -42,12 +107,30 @@ class HistoryItem: NSObject, Identifiable {
     
     /// File system id. Unique name of the folder contains the data for this item
     let fsId: UUID
-    
+
     /// Whether the item is being cached.
     var isCached: Bool {
         return cache.isItemRegistered(fsId)
     }
-    
+
+    private(set) var metadata: Metadata
+
+    var category: Metadata.Category {
+        metadata.category
+    }
+
+    var originBundleId: String? {
+        metadata.originBundleId
+    }
+
+    var originApplicationName: String? {
+        metadata.originApplicationName
+    }
+
+    var sourceDisplayName: String {
+        metadata.sourceDisplayName
+    }
+
     static let historyItemIdType = NSPasteboard.PasteboardType(rawValue: "MatthewDavidson.Yippy.historyItemId")
     
     /// Static definition of whether the history items should write RTF data to the pasteboard.
@@ -64,11 +147,12 @@ class HistoryItem: NSObject, Identifiable {
     ///
     /// - Parameter unsavedData: Pastebaord data that has not yet been saved to disk.
     /// - Parameter cache: `HistoryCache` to use for caching if this item starts using caching.
-    init(unsavedData: [NSPasteboard.PasteboardType: Data], cache: HistoryCache) {
+    init(unsavedData: [NSPasteboard.PasteboardType: Data], cache: HistoryCache, metadata: Metadata = Metadata()) {
         self._unsavedData = unsavedData
         self.types = unsavedData.keys.map({$0})
         self.cache = cache
         self.fsId = UUID()
+        self.metadata = metadata
     }
     
     /// Creates a `HistoryItem` for an item that is saved to disk.
@@ -76,12 +160,13 @@ class HistoryItem: NSObject, Identifiable {
     /// - Parameter fsId: The unique id of the item.
     /// - Parameter types: The types of pasteboard data that this item contains.
     /// - Parameter cache: `HistoryCache` to use for caching.
-    init(fsId: UUID, types: [NSPasteboard.PasteboardType], cache: HistoryCache) {
+    init(fsId: UUID, types: [NSPasteboard.PasteboardType], cache: HistoryCache, metadata: Metadata = Metadata()) {
         self.fsId = fsId
         self._unsavedData = nil
         self.types = types
         self.cache = cache
         self.cache.registerItem(withId: fsId)
+        self.metadata = metadata
     }
     
     
@@ -123,6 +208,10 @@ class HistoryItem: NSObject, Identifiable {
     func startCaching() {
         _unsavedData = nil
         cache.registerItem(withId: fsId)
+    }
+
+    func applyMetadata(_ metadata: Metadata) {
+        self.metadata = metadata
     }
     
     /// Stops caching the item.

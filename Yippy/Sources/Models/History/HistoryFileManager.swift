@@ -146,10 +146,15 @@ class HistoryFileManager {
             if let id = UUID(uuidString: content.lastPathComponent) {
                 do {
                     // Get all the files
-                    let dataUrls = try self.fileManager.contentsOfDirectory(at: content, includingPropertiesForKeys: nil)
+                    var dataUrls = try self.fileManager.contentsOfDirectory(at: content, includingPropertiesForKeys: nil)
+                    dataUrls.removeAll(where: { url in
+                        let lastPathComponent = url.lastPathComponent
+                        return lastPathComponent == HistoryItem.metadataFileName || lastPathComponent == ".DS_Store"
+                    })
                     // and create the types
                     let types = dataUrls.map({NSPasteboard.PasteboardType($0.lastPathComponent)})
-                    items[id] = HistoryItem(fsId: id, types: types, cache: cache)
+                    let metadata = self.loadMetadata(forItemWithId: id, availableTypes: types)
+                    items[id] = HistoryItem(fsId: id, types: types, cache: cache, metadata: metadata)
                 }
                 catch {
                     let historyError = YippyError(code: 0, userInfo: [
@@ -245,10 +250,12 @@ class HistoryFileManager {
                     return
                 }
             }
-            
+
             // Start caching now that the data is written
             newHistory[i].startCaching()
-            
+
+            self.saveMetadata(newHistory[i])
+
             // Update order
             self.saveHistoryOrder(history: newHistory, completionHandler: handler)
         }
@@ -311,7 +318,7 @@ class HistoryFileManager {
     func moveItem(newHistory: [HistoryItem], from: Int, to: Int, completionHandler: ((Bool) -> Void)? = nil) {
         saveHistoryOrder(history: newHistory, completionHandler: completionHandler)
     }
-    
+
     func clearHistory(completionHandler handler: ((Bool) -> Void)? = nil) {
         dispatchQueue.async {
             // Delete the old history
@@ -350,8 +357,70 @@ class HistoryFileManager {
     func getUrl(forItemWithId id: UUID) -> URL {
         return Constants.urls.history.appendingPathComponent("\(id.uuidString)", isDirectory: true)
     }
-    
+
     func getUrl(forItemWithId id: UUID, andPasteboardType type: NSPasteboard.PasteboardType) -> URL {
         return getUrl(forItemWithId: id).appendingPathComponent(type.rawValue, isDirectory: false)
+    }
+
+    private func metadataUrl(forItemWithId id: UUID) -> URL {
+        return getUrl(forItemWithId: id).appendingPathComponent(HistoryItem.metadataFileName, isDirectory: false)
+    }
+
+    private func readMetadata(forItemWithId id: UUID) -> HistoryItem.Metadata? {
+        let url = metadataUrl(forItemWithId: id)
+        guard fileManager.fileExists(atPath: url.path) else {
+            return nil
+        }
+
+        do {
+            let data = try dataFileManager.loadData(contentsOf: url)
+            return try JSONDecoder().decode(HistoryItem.Metadata.self, from: data)
+        }
+        catch {
+            let warning = YippyWarning(localizedDescription: "Failed to read metadata for history item with id '\(id.uuidString)' due to error: \(error.localizedDescription)")
+            warning.log(with: warningLogger)
+            return nil
+        }
+    }
+
+    private func loadMetadata(forItemWithId id: UUID, availableTypes: [NSPasteboard.PasteboardType]) -> HistoryItem.Metadata {
+        if let metadata = readMetadata(forItemWithId: id) {
+            return metadata
+        }
+
+        let inferredMetadata = HistoryItem.Metadata.infer(
+            types: availableTypes,
+            dataProvider: { [weak self] type in
+                guard let self = self else { return nil }
+                let url = self.getUrl(forItemWithId: id, andPasteboardType: type)
+                return try? self.dataFileManager.loadData(contentsOf: url)
+            },
+            originBundleId: nil
+        )
+        save(metadata: inferredMetadata, forItemWithId: id)
+        return inferredMetadata
+    }
+
+    @discardableResult
+    private func saveMetadata(_ item: HistoryItem) -> Bool {
+        save(metadata: item.metadata, forItemWithId: item.fsId)
+    }
+
+    @discardableResult
+    private func save(metadata: HistoryItem.Metadata, forItemWithId id: UUID) -> Bool {
+        let url = metadataUrl(forItemWithId: id)
+
+        do {
+            let encoder = JSONEncoder()
+            encoder.outputFormatting = .prettyPrinted
+            let data = try encoder.encode(metadata)
+            try dataFileManager.writeData(data, to: url, options: .atomic)
+            return true
+        }
+        catch {
+            let warning = YippyWarning(localizedDescription: "Failed to save metadata for history item with id '\(id.uuidString)' due to error: \(error.localizedDescription)")
+            warning.log(with: warningLogger)
+            return false
+        }
     }
 }
