@@ -184,7 +184,12 @@ extension History: PasteboardMonitorDelegate {
                     }
                 }
                 if !data.isEmpty {
-                    let historyItem = HistoryItem(unsavedData: data, cache: cache)
+                    let metadata = HistoryItem.Metadata.infer(
+                        types: Array(filteredTypes),
+                        dataProvider: { type in data[type] },
+                        originBundleId: originBundleId
+                    )
+                    let historyItem = HistoryItem(unsavedData: data, cache: cache, metadata: metadata)
                     insertItem(historyItem, at: 0)
                 }
             }

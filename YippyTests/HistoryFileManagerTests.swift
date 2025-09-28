@@ -430,9 +430,10 @@ class HistoryFileManagerTests: XCTestCase {
         // 1. Setup to succeed creating a directory but fail data write
         fileManager.createDirectory[historyFM.getUrl(forItemWithId: history[0].fsId)] = true
         dataFileMangaer.writeDataSucceeds[historyFM.getUrl(forItemWithId: history[0].fsId, andPasteboardType: .string)] = true
+        dataFileMangaer.writeDataSucceeds[historyFM.getUrl(forItemWithId: history[0].fsId).appendingPathComponent(HistoryItem.metadataFileName)] = true
         // Expect succes:
         let success = expectation(description: "Success")
-        
+
         // 2. Call
         historyFM.insertItem(newHistory: history, at: 0) { res in
             if res {

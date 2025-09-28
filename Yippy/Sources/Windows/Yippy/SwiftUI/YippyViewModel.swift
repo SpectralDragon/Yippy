@@ -19,23 +19,102 @@ struct Results {
     let isSearchResult: Bool
 }
 
+enum CategoryFilter: Hashable, Identifiable {
+    case all
+    case category(HistoryItem.Metadata.Category)
+
+    var id: String {
+        switch self {
+        case .all:
+            return "all"
+        case .category(let category):
+            return category.rawValue
+        }
+    }
+
+    var title: String {
+        switch self {
+        case .all:
+            return "All"
+        case .category(let category):
+            return category.displayName
+        }
+    }
+
+    static var defaults: [CategoryFilter] {
+        return [
+            .all,
+            .category(.text),
+            .category(.code),
+            .category(.photo),
+            .category(.video),
+            .category(.url),
+            .category(.color),
+            .category(.file),
+            .category(.other)
+        ]
+    }
+}
+
+enum CodeSourceFilter: Hashable, Identifiable {
+    case all
+    case bundle(id: String, displayName: String)
+    case unknown
+
+    var id: String {
+        switch self {
+        case .all:
+            return "all"
+        case .bundle(let id, _):
+            return id
+        case .unknown:
+            return "unknown"
+        }
+    }
+
+    var displayName: String {
+        switch self {
+        case .all:
+            return "All Apps"
+        case .bundle(_, let displayName):
+            return displayName
+        case .unknown:
+            return "Unknown App"
+        }
+    }
+}
+
 @Observable
 class YippyViewModel {
-    
+
     var searchBarValue: String = ""
     var itemCountLabel: String = ""
     var isSearchBarFocused: Bool = false
     
     var yippyHistory = YippyHistory(history: State.main.history, items: [])
-    
+
     private var searchEngine = SearchEngine(data: [])
     private let disposeBag = DisposeBag()
-    
+
     var isPreviewShowing = false
-    
+
     var panelPosition: Axis.Set = .vertical
-    
+
     var itemGroups = BehaviorRelay<[String]>(value: ["Clipboard", "Favourites", "Clipboard", "Favourites", "Clipboard", "Favourites"])
+
+    var categoryFilters: [CategoryFilter] = CategoryFilter.defaults
+    var selectedCategoryFilter: CategoryFilter = .all
+    var codeSourceFilters: [CodeSourceFilter] = [.all]
+    var selectedCodeSourceFilter: CodeSourceFilter = .all
+
+    var shouldShowCodeSourceFilters: Bool {
+        switch selectedCategoryFilter {
+        case .category(let category):
+            return category == .code && codeSourceFilters.count > 1
+        default:
+            return false
+        }
+    }
     
     var isRichText = Settings.main.showsRichText
     
@@ -128,14 +207,17 @@ class YippyViewModel {
     
     func onHistoryChange(_ history: [HistoryItem], change: History.Change) {
         updateSearchEngine(items: history)
+        refreshCodeSources(from: history)
+
         if !searchBarValue.isEmpty {
-            runSearch()
+            runSearch(resetSelection: false)
         }
         else {
-            results.accept(Results(items: history, isSearchResult: false))
+            let filteredHistory = applyFilters(to: history)
+            publishResults(items: filteredHistory, isSearchResult: false, resetSelection: false)
             switch change {
             case .insert(let i):
-                if i == 0 {
+                if i == 0, let newestItem = history.first, let firstFilteredItem = filteredHistory.first, newestItem === firstFilteredItem {
                     incrementSelected()
                 }
                 break;
@@ -158,7 +240,7 @@ class YippyViewModel {
     func updateSearchEngine(items: [HistoryItem]) {
         self.searchEngine = SearchEngine(data: items.compactMap({$0.getPlainString()}))
     }
-    
+
     func onAllChange(_ results: Results, _ selected: (Int?, Int?)) {
         if results.items != self.yippyHistory.items {
             if results.isSearchResult {
@@ -253,20 +335,42 @@ class YippyViewModel {
         self.isSearchBarFocused = true
     }
     
-    func runSearch() {
+    func runSearch(resetSelection: Bool = true) {
         searchEngine.search(query: self.searchBarValue, completion: { result in
             if (result.query.query.isEmpty) {
-                self.results.accept(Results(items: State.main.history.items, isSearchResult: false))
+                let filteredItems = self.applyFilters(to: State.main.history.items)
+                self.publishResults(items: filteredItems, isSearchResult: false, resetSelection: resetSelection)
                 return
             }
-            
+
             var filteredData = [HistoryItem]()
             for i in result.results {
-                filteredData.append(State.main.history.items[i])
+                if State.main.history.items.indices.contains(i) {
+                    filteredData.append(State.main.history.items[i])
+                }
             }
-            
-            self.results.accept(Results(items: filteredData, isSearchResult: true))
+
+            let filteredItems = self.applyFilters(to: filteredData)
+            self.publishResults(items: filteredItems, isSearchResult: true, resetSelection: resetSelection)
         })
+    }
+
+    func selectCategory(_ filter: CategoryFilter) {
+        guard selectedCategoryFilter != filter else { return }
+        selectedCategoryFilter = filter
+        if case .category(let category) = filter, category == .code {
+            // keep existing code source selection
+        }
+        else {
+            selectedCodeSourceFilter = .all
+        }
+        updateFilteredResults(resetSelection: true)
+    }
+
+    func selectCodeSource(_ filter: CodeSourceFilter) {
+        guard selectedCodeSourceFilter != filter else { return }
+        selectedCodeSourceFilter = filter
+        updateFilteredResults(resetSelection: true)
     }
     
     private func incrementSelected() {
@@ -292,9 +396,78 @@ class YippyViewModel {
             selected.accept(s - 1)
         }
     }
-    
+
     private func paste(selected: Int) {
         self.close()
         yippyHistory.paste(selected: selected)
+    }
+
+    private func applyFilters(to items: [HistoryItem]) -> [HistoryItem] {
+        var filtered = items
+
+        switch selectedCategoryFilter {
+        case .all:
+            break
+        case .category(let category):
+            filtered = filtered.filter { $0.category == category }
+        }
+
+        if selectedCategoryFilter == .category(.code) {
+            switch selectedCodeSourceFilter {
+            case .all:
+                break
+            case .bundle(let id, _):
+                filtered = filtered.filter { $0.originBundleId == id }
+            case .unknown:
+                filtered = filtered.filter { $0.originBundleId == nil }
+            }
+        }
+
+        return filtered
+    }
+
+    private func refreshCodeSources(from items: [HistoryItem]) {
+        let codeItems = items.filter { $0.category == .code }
+        var uniqueBundles = Set<String>()
+        var filters: [CodeSourceFilter] = [.all]
+        var hasUnknown = false
+
+        for item in codeItems {
+            if let bundleId = item.originBundleId {
+                if uniqueBundles.insert(bundleId).inserted {
+                    let displayName = item.originApplicationName ?? item.sourceDisplayName
+                    filters.append(.bundle(id: bundleId, displayName: displayName))
+                }
+            } else {
+                hasUnknown = true
+            }
+        }
+
+        if hasUnknown {
+            filters.append(.unknown)
+        }
+
+        codeSourceFilters = filters
+        if !codeSourceFilters.contains(selectedCodeSourceFilter) {
+            selectedCodeSourceFilter = .all
+        }
+    }
+
+    private func publishResults(items: [HistoryItem], isSearchResult: Bool, resetSelection: Bool) {
+        results.accept(Results(items: items, isSearchResult: isSearchResult))
+        if resetSelection {
+            DispatchQueue.main.async {
+                self.resetSelected()
+            }
+        }
+    }
+
+    private func updateFilteredResults(resetSelection: Bool) {
+        if searchBarValue.isEmpty {
+            let filtered = applyFilters(to: State.main.history.items)
+            publishResults(items: filtered, isSearchResult: false, resetSelection: resetSelection)
+        } else {
+            runSearch(resetSelection: resetSelection)
+        }
     }
 }

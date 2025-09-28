@@ -13,9 +13,9 @@ class DataFileManagerMock: DataFileManager {
     
     var writeDataSucceeds = [URL: Bool]()
     var loadData = [URL: Data]()
-    
+
     override func writeData(_ data: Data, to url: URL, options: Data.WritingOptions = []) throws {
-        if writeDataSucceeds[url] == nil || writeDataSucceeds[url] == false {
+        if writeDataSucceeds[url] == false {
             throw NSError(domain: "FileManagerTests", code: 0)
         }
     }
