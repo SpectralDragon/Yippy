@@ -25,13 +25,7 @@ struct HistoryWebLinkCellView: View {
     }
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            // Category badge
-            CategoryBadgeView(
-                category: item.getCategory(),
-                codeSource: item.getCodeSource()
-            )
-            
+        VStack(alignment: .trailing, spacing: 4) {
             // Link content
             Group {
                 if isLoading {
@@ -39,15 +33,17 @@ struct HistoryWebLinkCellView: View {
                         .frame(width: width, height: width / 2)
                         .skeletonable()
                 } else {
-                    if let metadata = self.metadata {
-                        LinkPreview(metadata: metadata)
-                            .frame(width: width)
-                            .allowsHitTesting(false)
-                    } else {
-                        HistoryTextCellView(item: item, proxy: proxy, usingItemRtf: false)
-                    }
+                    HistoryTextCellView(item: item, proxy: proxy, usingItemRtf: false)
                 }
             }
+
+            // Category badge
+            CategoryBadgeView(
+                category: item.getCategory(),
+                codeSource: item.getCodeSource()
+            )
+            .padding(.trailing, 6)
+            .padding(.bottom, 6)
         }
         .accessibilityIdentifier(Accessibility.identifiers.yippyWebLinkCellView)
         .task {

@@ -17,13 +17,7 @@ struct HistoryTextCellView: View {
     let usingItemRtf: Bool
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            // Category badge
-            CategoryBadgeView(
-                category: item.getCategory(),
-                codeSource: item.getCodeSource()
-            )
-            
+        VStack(alignment: .trailing, spacing: 4) {
             // Text content
             HStack(spacing: 0) {
                 Text(AttributedString(HistoryItemText.getAttributedString(forItem: item, usingItemRtf: usingItemRtf)))
@@ -31,8 +25,16 @@ struct HistoryTextCellView: View {
                 
                 Spacer()
             }
+            .padding(settings.textInset)
+
+            // Category badge
+            CategoryBadgeView(
+                category: item.getCategory(),
+                codeSource: item.getCodeSource()
+            )
+            .padding(.bottom, 6)
+            .padding(.trailing, 6)
         }
-        .padding(settings.textInset)
         .frame(
             width: width,
             height: Self.calculateCellHeight(

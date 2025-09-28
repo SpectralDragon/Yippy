@@ -150,7 +150,9 @@ final class CategoryDetector {
             "interface", "extends", "implements", "throws", "try", "catch",
             "def", "end", "begin", "rescue", "yield", "module", "namespace",
             "using", "include", "require", "from", "as", "with", "lambda",
-            
+            "async", "await", "void", "int", "string", "float", "bool", "true", "false", "null", "nil",
+            "func", "fun",
+
             // Operators and symbols
             "=>", "->", "::", "++", "--", "!=", "==", "===", "!==",
             "&&", "||", "&", "|", "^", "~", "<<", ">>", ">>>",

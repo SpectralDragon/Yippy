@@ -214,38 +214,36 @@ struct YippyHistoryTableView: View {
         ForEach(Array(viewModel.yippyHistory.items.enumerated()), id: \.element) { (index, item) in
             HistoryCellView(item: item, proxy: proxy, usingItemRtf: viewModel.isRichText)
                 .yippyRowBackground(colorScheme: colorScheme)
-                .overlay {
-                    ZStack(alignment: .topLeading) {
-                        if index < 10 {
-                            VStack {
-                                HStack {
-                                    Spacer()
-                                    
-                                    (Text(Image(systemName: "command")) + Text("+ \(index)"))
-                                        .font(.system(size: 10))
-                                        .padding(.all, 4)
-                                        .foregroundStyle(Color.white)
-                                        .background(
-                                            RoundedRectangle(
-                                                cornerRadius: NSApplication.isMacOS26 ? 16 : 7,
-                                                style: .continuous
-                                            )
-                                            .fill(Color.accentColor)
-                                        )
-                                        .padding(4)
-                                }
-                                
+                .overlay(alignment: .topLeading) {
+                    if index < 10 {
+                        VStack {
+                            HStack {
                                 Spacer()
+
+                                (Text(Image(systemName: "command")) + Text("+ \(index)"))
+                                    .font(.system(size: 10))
+                                    .padding(.all, 4)
+                                    .foregroundStyle(Color.white)
+                                    .background(
+                                        RoundedRectangle(
+                                            cornerRadius: NSApplication.isMacOS26 ? 16 : 7,
+                                            style: .continuous
+                                        )
+                                        .fill(Color.accentColor)
+                                    )
+                                    .padding(4)
                             }
+
+                            Spacer()
                         }
-                        
-                        if viewModel.selectedItem == item {
-                            RoundedRectangle(
-                                cornerRadius: NSApplication.isMacOS26 ? 16 : 7,
-                                style: .continuous
-                            )
-                            .stroke(Color.accentColor, lineWidth: 6)
-                        }
+                    }
+
+                    if viewModel.selectedItem == item {
+                        RoundedRectangle(
+                            cornerRadius: NSApplication.isMacOS26 ? 16 : 7,
+                            style: .continuous
+                        )
+                        .stroke(Color.accentColor, lineWidth: 6)
                     }
                 }
                 .onTapGesture {

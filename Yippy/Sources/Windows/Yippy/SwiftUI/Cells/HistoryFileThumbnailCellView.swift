@@ -25,13 +25,7 @@ struct HistoryFileThumbnailCellView: View {
     }
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            // Category badge
-            CategoryBadgeView(
-                category: item.getCategory(),
-                codeSource: item.getCodeSource()
-            )
-            
+        VStack(alignment: .trailing, spacing: 4) {
             // Thumbnail content
             Group {
                 if self.isLoading {
@@ -48,7 +42,7 @@ struct HistoryFileThumbnailCellView: View {
                         }
                         
                         VStack {
-                            
+
                             Spacer()
                             
                             if let attributedPath {
@@ -57,6 +51,15 @@ struct HistoryFileThumbnailCellView: View {
                                     .padding(.all, 8)
                                     .materialBlur(style: .contentBackground, opacity: 0.9)
                             }
+                        }
+                        .overlay(alignment: .bottomTrailing) {
+                            // Category badge
+                            CategoryBadgeView(
+                                category: item.getCategory(),
+                                codeSource: item.getCodeSource()
+                            )
+                            .padding(.bottom, 8)
+                            .padding(.trailing, 8)
                         }
                     }
                     .frame(
