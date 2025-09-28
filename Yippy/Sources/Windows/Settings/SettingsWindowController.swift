@@ -14,16 +14,16 @@ import HotKey
 class SettingsWindowController: NSWindowController {
     
     static func createSettingsWindowController() -> SettingsWindowController {
-//        let storyboard = NSStoryboard(name: NSStoryboard.Name("Main"), bundle: nil)
-//        let identifier = NSStoryboard.SceneIdentifier(stringLiteral: "SettingsWindowController")
-//        guard let windowController = storyboard.instantiateController(withIdentifier: identifier) as? SettingsWindowController else {
-//            fatalError("Failed to load SettingsWindowController of type SettingsWindowController from the Main storyboard.")
-//        }
-//        return windowController
+        let storyboard = NSStoryboard(name: NSStoryboard.Name("Main"), bundle: nil)
+        let identifier = NSStoryboard.SceneIdentifier(stringLiteral: "SettingsWindowController")
+        guard let windowController = storyboard.instantiateController(withIdentifier: identifier) as? SettingsWindowController else {
+            fatalError("Failed to load SettingsWindowController of type SettingsWindowController from the Main storyboard.")
+        }
+        return windowController
 
-        let window = NSWindow(contentViewController: SettingsHostingViewController(rootView: SettingsView()))
-        let controller = SettingsWindowController(window: window)
-        return controller
+//        let window = NSWindow(contentViewController: SettingsHostingViewController(rootView: SettingsView()))
+//        let controller = SettingsWindowController(window: window)
+//        return controller
     }
 }
 
@@ -41,11 +41,12 @@ class SettingsHostingViewController: NSHostingController<SettingsView> {
 struct SettingsView: View {
     enum SettingsSection: String, CaseIterable, Identifiable {
         case general = "General"
-        case appearance = "Внешний вид"
+        case appearance = "Appearance"
         case shortcuts = "Hot keys"
-        case about = "О программе"
+        case about = "About"
 
         var id: String { rawValue }
+
         var systemImage: String {
             switch self {
             case .general: return "gearshape"
@@ -122,11 +123,27 @@ private struct GeneralSettingsView: View {
     @Binding var launchAtLogin: Bool
     @Binding var showInMenuBar: Bool
 
+    @AppStorage("maxStoredItems") private var maxStoredItems: Int = 500
+    @AppStorage("showsRichText") private var showsRichText: Bool = true
+    @AppStorage("isRichTextWhenPasting") private var isRichTextWhenPasting: Bool = false
+
     var body: some View {
         Form {
             Section("Launch") {
                 Toggle("Launch at login", isOn: $launchAtLogin)
                 Toggle("Show in menu bar", isOn: $showInMenuBar)
+            }
+            Section("Rich Text") {
+                Toggle("Show rich text", isOn: $showsRichText)
+
+                Toggle("Use rich text when pasting", isOn: $isRichTextWhenPasting)
+            }
+            Section("Others") {
+                Picker("Maximum number of stored items", selection: $maxStoredItems) {
+                    ForEach(Constants.settings.maxHistoryItemsOptions, id: \.self) { number in
+                        Text("\(number)").tag(number)
+                    }
+                }
             }
         }
         .navigationTitle("General")
@@ -149,115 +166,6 @@ private struct AppearanceSettingsView: View {
             }
         }
         .navigationTitle("Appearance")
-    }
-}
-
-private struct ShortcutsSettingsView: View {
-    @SwiftUI.State private var captureShortcut: String = "⌘ + ⇧ + C"
-    @SwiftUI.State private var newToggleHotKey: KeyCombo?
-    @SwiftUI.State private var saveHotKeyButton: Bool = false
-    @SwiftUI.State private var keyPressMonitor: KeyPressMonitor = KeyPressMonitor()
-
-    var body: some View {
-        Form {
-            Section("Shortcuts") {
-                HStack {
-                    Text("Capture shortcut")
-                    Spacer()
-                    Button {
-                        keyPressMonitor.isPaused = false
-                    } label: {
-                        Text(captureShortcut)
-                    }
-                    .frame(width: 120)
-                    .background {
-                        if !keyPressMonitor.isPaused {
-                            RoundedRectangle(cornerRadius: 8)
-                                .fill(Color.accentColor)
-                        }
-                    }
-                }
-                .accessibilityElement(children: .combine)
-            }
-        }
-        .onDisappear(perform: {
-            keyPressMonitor.isPaused = true
-        })
-        .task {
-            showSavedToggleHotKey()
-            keyPressMonitor.subscribeToKeyDown { (keys, modifiers) in
-                if let toggleHotKey = self.createToggleHotKey(keys: keys, modifiers: modifiers) {
-                    self.showNewToggleHotKey(toggleHotKey)
-                    self.saveHotKeyButton = true
-                    self.newToggleHotKey = toggleHotKey
-                }
-                else {
-                    self.showSavedToggleHotKey()
-                    self.saveHotKeyButton = false
-                    self.newToggleHotKey = nil
-                }
-            }
-        }
-        .toolbar {
-            ToolbarItem(placement: .navigation) {
-                if #available(macOS 26.0, *) {
-                    Button("Save", role: .confirm) {
-                        save()
-                    }
-                    .disabled(!saveHotKeyButton)
-                } else {
-                    Button("Save") {
-                        save()
-                    }
-                    .disabled(!saveHotKeyButton)
-                }
-            }
-        }
-        .navigationTitle("Hot Keys")
-    }
-
-    func save() {
-        guard let hotKey = newToggleHotKey else {
-            return
-        }
-
-        YippyHotKeys.toggle.changeHotKey(keyCombo: hotKey)
-        Settings.main.toggleHotKey = hotKey
-        showSavedToggleHotKey()
-    }
-
-    func createToggleHotKey(keys: [Key], modifiers: NSEvent.ModifierFlags) -> KeyCombo? {
-        let modifiers = filterModifiers(modifiers)
-        let keys = filterKeys(keys)
-
-        guard keys.count == 1 else {
-            return nil
-        }
-
-        let key = keys[0]
-
-        guard !modifiers.isEmpty || isFunctionKey(key: key) else {
-            return nil
-        }
-
-        return KeyCombo(key: key, modifiers: modifiers)
-    }
-
-    func showSavedToggleHotKey() {
-        captureShortcut = formatToggleHotKey(Settings.main.toggleHotKey)
-//        hotkeyLabel.textColor = NSColor.secondaryLabelColor
-    }
-
-    func showNewToggleHotKey(_ toggleHotKey: KeyCombo) {
-        captureShortcut = formatToggleHotKey(toggleHotKey)
-//        hotkeyLabel.textColor = NSColor.labelColor
-    }
-
-    func formatToggleHotKey(_ toggleHotKey: KeyCombo) -> String {
-        let keyStrings = stringifyKeys([toggleHotKey.key].compactMap{$0})
-        let modifierStrings = toggleHotKey.modifiers.toStringCharacters()
-
-        return (modifierStrings + keyStrings).joined(separator: "+")
     }
 }
 
