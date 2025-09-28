@@ -14,16 +14,16 @@ import HotKey
 class SettingsWindowController: NSWindowController {
     
     static func createSettingsWindowController() -> SettingsWindowController {
-        let storyboard = NSStoryboard(name: NSStoryboard.Name("Main"), bundle: nil)
-        let identifier = NSStoryboard.SceneIdentifier(stringLiteral: "SettingsWindowController")
-        guard let windowController = storyboard.instantiateController(withIdentifier: identifier) as? SettingsWindowController else {
-            fatalError("Failed to load SettingsWindowController of type SettingsWindowController from the Main storyboard.")
-        }
-        return windowController
+//        let storyboard = NSStoryboard(name: NSStoryboard.Name("Main"), bundle: nil)
+//        let identifier = NSStoryboard.SceneIdentifier(stringLiteral: "SettingsWindowController")
+//        guard let windowController = storyboard.instantiateController(withIdentifier: identifier) as? SettingsWindowController else {
+//            fatalError("Failed to load SettingsWindowController of type SettingsWindowController from the Main storyboard.")
+//        }
+//        return windowController
 
-//        let window = NSWindow(contentViewController: SettingsHostingViewController(rootView: SettingsView()))
-//        let controller = SettingsWindowController(window: window)
-//        return controller
+        let window = NSWindow(contentViewController: SettingsHostingViewController(rootView: SettingsView()))
+        let controller = SettingsWindowController(window: window)
+        return controller
     }
 }
 
@@ -37,6 +37,11 @@ class SettingsHostingViewController: NSHostingController<SettingsView> {
     }
 }
 
+enum AppearanceTheme: String, CaseIterable, Codable {
+    case system
+    case light
+    case dark
+}
 
 struct SettingsView: View {
     enum SettingsSection: String, CaseIterable, Identifiable {
@@ -71,10 +76,10 @@ struct SettingsView: View {
     }
 
     @SwiftUI.State private var selection: SettingsSection? = .general
-    @AppStorage("launchAtLogin") private var launchAtLogin: Bool = false
-    @AppStorage("showInMenuBar") private var showInMenuBar: Bool = true
     @AppStorage("useCompactUI") private var useCompactUI: Bool = false
-    @AppStorage("theme") private var theme: String = "system" // system, light, dark
+    @AppStorage("theme") private var theme: AppearanceTheme = AppearanceTheme.system // system, light, dark
+
+    @Environment(\.colorScheme) private var colorScheme
 
     var body: some View {
         NavigationSplitView {
@@ -104,7 +109,7 @@ struct SettingsView: View {
         } detail: {
             Group {
                 switch selection {
-                case .general: GeneralSettingsView(launchAtLogin: $launchAtLogin, showInMenuBar: $showInMenuBar)
+                case .general: GeneralSettingsView()
                 case .appearance: AppearanceSettingsView(theme: $theme, useCompactUI: $useCompactUI)
                 case .shortcuts: ShortcutsSettingsView()
                 case .about: AboutSettingsView()
@@ -116,22 +121,21 @@ struct SettingsView: View {
             .formStyle(.grouped)
         }
         .frame(minWidth: 640, minHeight: 420)
+        .colorScheme(theme == .system ? colorScheme : (theme == .light ? .light : .dark))
     }
 }
 
 private struct GeneralSettingsView: View {
-    @Binding var launchAtLogin: Bool
-    @Binding var showInMenuBar: Bool
-
-    @AppStorage("maxStoredItems") private var maxStoredItems: Int = 500
-    @AppStorage("showsRichText") private var showsRichText: Bool = true
-    @AppStorage("isRichTextWhenPasting") private var isRichTextWhenPasting: Bool = false
+    @SwiftUI.State private var launchAtLogin: Bool = true
+    @SwiftUI.State private var maxStoredItems: Int = 500
+    @SwiftUI.State private var showsRichText: Bool = true
+    @SwiftUI.State private var isRichTextWhenPasting: Bool = true
 
     var body: some View {
         Form {
             Section("Launch") {
                 Toggle("Launch at login", isOn: $launchAtLogin)
-                Toggle("Show in menu bar", isOn: $showInMenuBar)
+//                Toggle("Show in menu bar", isOn: $showInMenuBar)
             }
             Section("Rich Text") {
                 Toggle("Show rich text", isOn: $showsRichText)
@@ -144,26 +148,65 @@ private struct GeneralSettingsView: View {
                         Text("\(number)").tag(number)
                     }
                 }
+
+                Button("Clear history", role: .destructive) {
+                    State.main.history.clear()
+                }
+                .foregroundColor(.red)
             }
         }
         .navigationTitle("General")
+        .onChange(of: maxStoredItems) { _, newValue in
+            State.main.history.setMaxItems(newValue)
+        }
+        .onChange(of: showsRichText) { _, newValue in
+            State.main.showsRichText.accept(newValue)
+        }
+        .onChange(of: isRichTextWhenPasting) { _, newValue in
+            State.main.pastesRichText.accept(newValue)
+        }
+        .onChange(of: launchAtLogin) { _, newValue in
+            State.main.launchAtLogin.accept(newValue)
+        }
+        .onAppear {
+            showsRichText = State.main.showsRichText.value
+            isRichTextWhenPasting = State.main.pastesRichText.value
+            launchAtLogin = State.main.launchAtLogin.value
+            maxStoredItems = Settings.main.maxHistory
+        }
     }
 }
 
 private struct AppearanceSettingsView: View {
-    @Binding var theme: String
+    @Binding var theme: AppearanceTheme
     @Binding var useCompactUI: Bool
+
+    @SwiftUI.State private var position: PanelPosition = .bottom
 
     var body: some View {
         Form {
             Section("Theme") {
                 Picker("Appearance", selection: $theme) {
-                    Text("System").tag("system")
-                    Text("Light").tag("light")
-                    Text("Dark").tag("dark")
+                    Text("System").tag(AppearanceTheme.system)
+                    Text("Light").tag(AppearanceTheme.light)
+                    Text("Dark").tag(AppearanceTheme.dark)
                 }
                 .pickerStyle(.segmented)
             }
+
+            Section("Interface") {
+                Picker("Position", selection: $position) {
+                    ForEach(PanelPosition.allCases, id: \.identifier) { pos in
+                        Text(pos.title).tag(pos)
+                    }
+                }
+            }
+        }
+        .onChange(of: position, { _, newValue in
+            State.main.panelPosition.accept(newValue)
+        })
+        .onAppear {
+            position = State.main.panelPosition.value
         }
         .navigationTitle("Appearance")
     }

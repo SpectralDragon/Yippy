@@ -34,6 +34,8 @@ struct YippyView: View {
     
     @Bindable var viewModel = YippyViewModel()
     @FocusState private var focusState: Focus?
+
+    @AppStorage("theme") private var theme: AppearanceTheme = AppearanceTheme.system
     @Environment(\.colorScheme) private var colorScheme
 
     var body: some View {
@@ -49,6 +51,7 @@ struct YippyView: View {
                 self.focusState = nil
             }
         }
+        .colorScheme(theme == .system ? colorScheme : (theme == .light ? .light : .dark))
     }
 
     @ViewBuilder
