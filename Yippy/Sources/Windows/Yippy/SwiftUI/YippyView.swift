@@ -50,9 +50,6 @@ struct YippyView: View {
             }
         }
     }
-}
-
-private extension YippyView {
 
     @ViewBuilder
     private var contentView: some View {
@@ -66,7 +63,10 @@ private extension YippyView {
         }
     }
 
-    @available(macOS 26.0, *)
+}
+
+@available(macOS 26.0, *)
+private extension YippyView {
     private var liquidDesignView: some View {
         VStack(spacing: 4) {
             Text("Yippy")
@@ -94,35 +94,48 @@ private extension YippyView {
             .padding(.horizontal, 24)
             .padding(.bottom, 8)
 
-            TextField(text: $viewModel.searchBarValue, prompt: Text("Search For Something (􀆔\\)")) {
-                Image(systemName: "magnifyingglass")
+            liquidDesignSearchView
+
+            CategoryFilterView(
+                selectedCategory: $viewModel.selectedCategory,
+                availableCategories: viewModel.getAvailableCategories()
+            )
+            .onChange(of: viewModel.selectedCategory) { _, newValue in
+                viewModel.onCategorySelected(newValue)
             }
-            .textFieldStyle(.plain)
-            .focused($focusState, equals: .searchbar)
-            .autocorrectionDisabled()
-            .onChange(of: viewModel.searchBarValue) { _, _ in
-                viewModel.runSearch()
-            }
-            .padding(.vertical, 12)
-            .padding(.horizontal, 8)
-            .glassEffect(in: Capsule())
-            .overlay(content: {
-                Capsule()
-                    .stroke(
-                        colorScheme == .light ? Color.black.opacity(0.3) : Color.white.opacity(0.3),
-                        lineWidth: 1
-                    )
-            })
-            .padding(.horizontal, 16)
 
             YippyHistoryTableView(viewModel: viewModel)
                 .onAppear(perform: viewModel.onAppear)
                 .padding(.vertical, 8)
         }
         .searchable(text: $viewModel.searchBarValue)
-
     }
 
+    private var liquidDesignSearchView: some View {
+        TextField(text: $viewModel.searchBarValue, prompt: Text("Search For Something (􀆔\\)")) {
+            Image(systemName: "magnifyingglass")
+        }
+        .textFieldStyle(.plain)
+        .focused($focusState, equals: .searchbar)
+        .autocorrectionDisabled()
+        .onChange(of: viewModel.searchBarValue) { _, _ in
+            viewModel.runSearch()
+        }
+        .padding(.vertical, 12)
+        .padding(.horizontal, 8)
+        .glassEffect(in: Capsule())
+        .overlay(content: {
+            Capsule()
+                .stroke(
+                    colorScheme == .light ? Color.black.opacity(0.3) : Color.white.opacity(0.3),
+                    lineWidth: 1
+                )
+        })
+        .padding(.horizontal, 16)
+    }
+}
+
+private extension YippyView {
     private var oldDesignView: some View {
         VStack(spacing: 4) {
             ZStack {
@@ -150,6 +163,15 @@ private extension YippyView {
             }
             .padding(.horizontal, 16)
             .padding(.bottom, 16)
+
+            CategoryFilterView(
+                selectedCategory: $viewModel.selectedCategory,
+                availableCategories: viewModel.getAvailableCategories()
+            )
+            .onChange(of: viewModel.selectedCategory) { _, newValue in
+                viewModel.onCategorySelected(newValue)
+            }
+            .padding(.bottom, 8)
 
             YippyHistoryTableView(viewModel: viewModel)
                 .onAppear(perform: viewModel.onAppear)

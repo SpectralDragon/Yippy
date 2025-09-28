@@ -18,25 +18,34 @@ struct HistoryFileIconCellView: View {
     @SwiftUI.State private var iconFileName: NSAttributedString?
     
     var body: some View {
-        Group {
-            HStack {
-                if let image {
-                    image
-                        .resizable()
-                        .scaledToFill()
-                        .frame(width: Self.iconSize.width, height: Self.iconSize.height)
-                }
-                if let iconFileName {
-                    Text(AttributedString(iconFileName))
-                        .frame(width: width)
-                        .padding(.all, 8)
-                        .materialBlur(style: .contentBackground, opacity: 0.9)
-                }
-            }
-            .frame(
-                width: self.width,
-                height: Self.getItemHeight(for: item, availableWidth: width, proxy: proxy, settings: settings)
+        VStack(alignment: .leading, spacing: 4) {
+            // Category badge
+            CategoryBadgeView(
+                category: item.getCategory(),
+                codeSource: item.getCodeSource()
             )
+            
+            // File content
+            Group {
+                HStack {
+                    if let image {
+                        image
+                            .resizable()
+                            .scaledToFill()
+                            .frame(width: Self.iconSize.width, height: Self.iconSize.height)
+                    }
+                    if let iconFileName {
+                        Text(AttributedString(iconFileName))
+                            .frame(width: width)
+                            .padding(.all, 8)
+                            .materialBlur(style: .contentBackground, opacity: 0.9)
+                    }
+                }
+                .frame(
+                    width: self.width,
+                    height: Self.getItemHeight(for: item, availableWidth: width, proxy: proxy, settings: settings)
+                )
+            }
         }
         .onAppear(perform: self.onAppear)
         .accessibilityIdentifier(Accessibility.identifiers.yippyFileIconCellView)

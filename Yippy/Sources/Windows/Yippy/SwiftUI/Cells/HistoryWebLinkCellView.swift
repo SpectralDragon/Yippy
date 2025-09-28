@@ -25,18 +25,27 @@ struct HistoryWebLinkCellView: View {
     }
     
     var body: some View {
-        Group {
-            if isLoading {
-                 RoundedRectangle(cornerRadius: 7)
-                    .frame(width: width, height: width / 2)
-                    .skeletonable()
-            } else {
-                if let metadata = self.metadata {
-                    LinkPreview(metadata: metadata)
-                        .frame(width: width)
-                        .allowsHitTesting(false)
+        VStack(alignment: .leading, spacing: 4) {
+            // Category badge
+            CategoryBadgeView(
+                category: item.getCategory(),
+                codeSource: item.getCodeSource()
+            )
+            
+            // Link content
+            Group {
+                if isLoading {
+                     RoundedRectangle(cornerRadius: 7)
+                        .frame(width: width, height: width / 2)
+                        .skeletonable()
                 } else {
-                    HistoryTextCellView(item: item, proxy: proxy, usingItemRtf: false)
+                    if let metadata = self.metadata {
+                        LinkPreview(metadata: metadata)
+                            .frame(width: width)
+                            .allowsHitTesting(false)
+                    } else {
+                        HistoryTextCellView(item: item, proxy: proxy, usingItemRtf: false)
+                    }
                 }
             }
         }

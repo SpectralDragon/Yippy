@@ -188,7 +188,13 @@ extension History: PasteboardMonitorDelegate {
                     }
                 }
                 if !data.isEmpty {
-                    let historyItem = HistoryItem(unsavedData: data, cache: cache)
+                    let historyItem = HistoryItem(
+                        unsavedData: data,
+                        cache: cache,
+                        originBundleId: originBundleId
+                    )
+                    // Detect category automatically when creating new history item
+                    historyItem.detectAndSetCategory()
                     insertItem(historyItem, at: 0)
                 }
             }

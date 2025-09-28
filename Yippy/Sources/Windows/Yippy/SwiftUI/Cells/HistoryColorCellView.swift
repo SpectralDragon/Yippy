@@ -13,9 +13,18 @@ struct HistoryColorCellView: View {
     let item: HistoryItem
     
     var body: some View {
-        Group {
-            if let color = item.getColor()?.withAlphaComponent(1) {
-                Color(cgColor: color.cgColor)
+        VStack(alignment: .leading, spacing: 4) {
+            // Category badge
+            CategoryBadgeView(
+                category: item.getCategory(),
+                codeSource: item.getCodeSource()
+            )
+            
+            // Color content
+            Group {
+                if let color = item.getColor()?.withAlphaComponent(1) {
+                    Color(cgColor: color.cgColor)
+                }
             }
         }
         .accessibilityIdentifier(Accessibility.identifiers.yippyColorCellView)

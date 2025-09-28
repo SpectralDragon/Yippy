@@ -17,11 +17,20 @@ struct HistoryTextCellView: View {
     let usingItemRtf: Bool
     
     var body: some View {
-        HStack(spacing: 0) {
-            Text(AttributedString(HistoryItemText.getAttributedString(forItem: item, usingItemRtf: usingItemRtf)))
-                .multilineTextAlignment(.leading)
+        VStack(alignment: .leading, spacing: 4) {
+            // Category badge
+            CategoryBadgeView(
+                category: item.getCategory(),
+                codeSource: item.getCodeSource()
+            )
             
-            Spacer()
+            // Text content
+            HStack(spacing: 0) {
+                Text(AttributedString(HistoryItemText.getAttributedString(forItem: item, usingItemRtf: usingItemRtf)))
+                    .multilineTextAlignment(.leading)
+                
+                Spacer()
+            }
         }
         .padding(settings.textInset)
         .frame(
@@ -77,8 +86,11 @@ struct HistoryTextCellView: View {
         // Determine the height of the text
         let estTextHeight = attrStr.calculateSize(withMaxWidth: width).height
         
+        // Add height for category badge (approximately 20 points)
+        let categoryBadgeHeight: CGFloat = 20
+        
         // Add the padding back to get the height of the cell
-        let height = Self.getCellHeight(estTextHeight: estTextHeight, settings: settings)
+        let height = Self.getCellHeight(estTextHeight: estTextHeight + categoryBadgeHeight, settings: settings)
         
         return ceil(height)
     }

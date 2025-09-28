@@ -16,19 +16,28 @@ struct HistoryImageCellView: View {
     @Environment(\.historyCellSettings) private var settings
     
     var body: some View {
-        Group {
-            if let image = item.getImage() {
-                Image(nsImage: image)
-                    .resizable()
-                    .scaledToFill()
-            } else {
-                Rectangle()
-                    .fill(Color.gray)
+        VStack(alignment: .leading, spacing: 4) {
+            // Category badge
+            CategoryBadgeView(
+                category: item.getCategory(),
+                codeSource: item.getCodeSource()
+            )
+            
+            // Image content
+            Group {
+                if let image = item.getImage() {
+                    Image(nsImage: image)
+                        .resizable()
+                        .scaledToFill()
+                } else {
+                    Rectangle()
+                        .fill(Color.gray)
+                }
             }
+            .frame(width: width,
+                   height: Self.imageHeight(for: item, width: width, proxy: proxy, settings: settings))
+            .clipped()
         }
-        .frame(width: width,
-               height: Self.imageHeight(for: item, width: width, proxy: proxy, settings: settings))
-        .clipped()
         .accessibilityIdentifier(Accessibility.identifiers.yippyTiffCellView)
     }
     
