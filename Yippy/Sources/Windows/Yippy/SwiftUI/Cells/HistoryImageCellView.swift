@@ -14,8 +14,9 @@ struct HistoryImageCellView: View {
     let proxy: GeometryProxy
     
     @Environment(\.historyCellSettings) private var settings
-    
+
     var body: some View {
+        // Image content
         Group {
             if let image = item.getImage() {
                 Image(nsImage: image)
@@ -29,6 +30,14 @@ struct HistoryImageCellView: View {
         .frame(width: width,
                height: Self.imageHeight(for: item, width: width, proxy: proxy, settings: settings))
         .clipped()
+        .overlay(alignment: .bottomTrailing) {
+            // Category badge
+            CategoryBadgeView(
+                category: item.getCategory(),
+                codeSource: item.getCodeSource()
+            )
+            .padding(8)
+        }
         .accessibilityIdentifier(Accessibility.identifiers.yippyTiffCellView)
     }
     

@@ -26,6 +26,8 @@ class YippyViewModel {
     var itemCountLabel: String = ""
     var isSearchBarFocused: Bool = false
     
+    var selectedCategory: HistoryItemCategory? = nil
+    
     var yippyHistory = YippyHistory(history: State.main.history, items: [])
     
     private var searchEngine = SearchEngine(data: [])
@@ -132,7 +134,8 @@ class YippyViewModel {
             runSearch()
         }
         else {
-            results.accept(Results(items: history, isSearchResult: false))
+            let filteredItems = applyCategoryFilter(to: history)
+            results.accept(Results(items: filteredItems, isSearchResult: false))
             switch change {
             case .insert(let i):
                 if i == 0 {
@@ -256,7 +259,8 @@ class YippyViewModel {
     func runSearch() {
         searchEngine.search(query: self.searchBarValue, completion: { result in
             if (result.query.query.isEmpty) {
-                self.results.accept(Results(items: State.main.history.items, isSearchResult: false))
+                let filteredItems = self.applyCategoryFilter(to: State.main.history.items)
+                self.results.accept(Results(items: filteredItems, isSearchResult: false))
                 return
             }
             
@@ -265,8 +269,38 @@ class YippyViewModel {
                 filteredData.append(State.main.history.items[i])
             }
             
-            self.results.accept(Results(items: filteredData, isSearchResult: true))
+            let categoryFilteredData = self.applyCategoryFilter(to: filteredData)
+            self.results.accept(Results(items: categoryFilteredData, isSearchResult: true))
         })
+    }
+    
+    func applyCategoryFilter(to items: [HistoryItem]) -> [HistoryItem] {
+        guard let selectedCategory = selectedCategory else {
+            return items
+        }
+        
+        return items.filter { item in
+            item.getCategory() == selectedCategory
+        }
+    }
+    
+    func getAvailableCategories() -> [HistoryItemCategory] {
+        let allCategories = Set(State.main.history.items.map { $0.getCategory() })
+        return Array(allCategories).sorted { $0.displayName < $1.displayName }
+    }
+    
+    func getCategoryCount(for category: HistoryItemCategory) -> Int {
+        return State.main.history.items.filter { $0.getCategory() == category }.count
+    }
+    
+    func onCategorySelected(_ category: HistoryItemCategory?) {
+        selectedCategory = category
+        if searchBarValue.isEmpty {
+            let filteredItems = applyCategoryFilter(to: State.main.history.items)
+            results.accept(Results(items: filteredItems, isSearchResult: false))
+        } else {
+            runSearch()
+        }
     }
     
     private func incrementSelected() {

@@ -18,7 +18,8 @@ struct HistoryFileIconCellView: View {
     @SwiftUI.State private var iconFileName: NSAttributedString?
     
     var body: some View {
-        Group {
+        VStack(alignment: .trailing, spacing: 4) {
+            // File content
             HStack {
                 if let image {
                     image
@@ -37,6 +38,14 @@ struct HistoryFileIconCellView: View {
                 width: self.width,
                 height: Self.getItemHeight(for: item, availableWidth: width, proxy: proxy, settings: settings)
             )
+
+            // Category badge
+            CategoryBadgeView(
+                category: item.getCategory(),
+                codeSource: item.getCodeSource()
+            )
+            .padding(.trailing, 6)
+            .padding(.bottom, 6)
         }
         .onAppear(perform: self.onAppear)
         .accessibilityIdentifier(Accessibility.identifiers.yippyFileIconCellView)

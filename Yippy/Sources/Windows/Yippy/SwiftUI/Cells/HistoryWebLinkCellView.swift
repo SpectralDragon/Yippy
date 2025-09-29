@@ -25,20 +25,25 @@ struct HistoryWebLinkCellView: View {
     }
     
     var body: some View {
-        Group {
-            if isLoading {
-                 RoundedRectangle(cornerRadius: 7)
-                    .frame(width: width, height: width / 2)
-                    .skeletonable()
-            } else {
-                if let metadata = self.metadata {
-                    LinkPreview(metadata: metadata)
-                        .frame(width: width)
-                        .allowsHitTesting(false)
+        VStack(alignment: .trailing, spacing: 4) {
+            // Link content
+            Group {
+                if isLoading {
+                     RoundedRectangle(cornerRadius: 7)
+                        .frame(width: width, height: width / 2)
+                        .skeletonable()
                 } else {
                     HistoryTextCellView(item: item, proxy: proxy, usingItemRtf: false)
                 }
             }
+
+            // Category badge
+            CategoryBadgeView(
+                category: item.getCategory(),
+                codeSource: item.getCodeSource()
+            )
+            .padding(.trailing, 6)
+            .padding(.bottom, 6)
         }
         .accessibilityIdentifier(Accessibility.identifiers.yippyWebLinkCellView)
         .task {

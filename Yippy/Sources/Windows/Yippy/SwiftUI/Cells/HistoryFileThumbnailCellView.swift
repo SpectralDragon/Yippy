@@ -25,36 +25,48 @@ struct HistoryFileThumbnailCellView: View {
     }
     
     var body: some View {
-        Group {
-            if self.isLoading {
-                RoundedRectangle(cornerRadius: 7)
-                    .frame(width: width, height: Self.imageSize.height)
-                    .skeletonable()
-            } else {
-                ZStack {
-                    if let previewImage {
-                        previewImage
-                            .resizable()
-                            .scaledToFill()
-                            .frame(width: width, height: Self.imageSize.height)
-                    }
-                    
-                    VStack {
+        VStack(alignment: .trailing, spacing: 4) {
+            // Thumbnail content
+            Group {
+                if self.isLoading {
+                    RoundedRectangle(cornerRadius: 7)
+                        .frame(width: width, height: Self.imageSize.height)
+                        .skeletonable()
+                } else {
+                    ZStack {
+                        if let previewImage {
+                            previewImage
+                                .resizable()
+                                .scaledToFill()
+                                .frame(width: width, height: Self.imageSize.height)
+                        }
                         
-                        Spacer()
-                        
-                        if let attributedPath {
-                            Text(attributedPath)
-                                .frame(width: width)
-                                .padding(.all, 8)
-                                .materialBlur(style: .contentBackground, opacity: 0.9)
+                        VStack {
+
+                            Spacer()
+                            
+                            if let attributedPath {
+                                Text(attributedPath)
+                                    .frame(width: width)
+                                    .padding(.all, 8)
+                                    .materialBlur(style: .contentBackground, opacity: 0.9)
+                            }
+                        }
+                        .overlay(alignment: .bottomTrailing) {
+                            // Category badge
+                            CategoryBadgeView(
+                                category: item.getCategory(),
+                                codeSource: item.getCodeSource()
+                            )
+                            .padding(.bottom, 8)
+                            .padding(.trailing, 8)
                         }
                     }
+                    .frame(
+                        width: self.width,
+                        height: Self.getItemHeight(for: item, availableWidth: width, settings: settings, proxy: proxy)
+                    )
                 }
-                .frame(
-                    width: self.width,
-                    height: Self.getItemHeight(for: item, availableWidth: width, settings: settings, proxy: proxy)
-                )
             }
         }
         .accessibilityIdentifier(Accessibility.identifiers.yippyFileThumbnailCellView)

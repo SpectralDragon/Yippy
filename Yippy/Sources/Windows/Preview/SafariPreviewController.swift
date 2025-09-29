@@ -21,7 +21,7 @@ class SafariPreviewController: NSHostingController<SafariPreviewView>, PreviewVi
     }
     
     static var identifier: NSStoryboard.SceneIdentifier = "SafariPreviewController"
-    
+
     func configureView(forItem item: HistoryItem) -> NSRect {
         guard let url = item.getUrl() else {
             return calculateWindowFrame()
@@ -55,20 +55,31 @@ struct SafariPreviewView: View {
     var body: some View {
         VStack(spacing: 0) {
             HStack {
+                Button {
+                    dismiss()
+                } label: {
+                    Image(systemName: "xmark")
+                }
+                .buttonStyle(BorderStrokeButtonStyle(shape: Circle()))
+
                 Spacer()
-                
+
                 Button("Open in browser") {
                     if let url = viewModel.url {
                         NSWorkspace.shared.open(url)
                         dismiss()
                     }
                 }
-                .buttonStyle(BorderStrokeButtonStyle(cornerRadius: 8))
+                .buttonStyle(BorderStrokeButtonStyle(shape: Capsule()))
             }
             .padding(.all, 16)
-            .background(Color(NSColor.windowBackgroundColor))
-            
-            WebViewView(url: viewModel.url)
+            .newBackgroundEffect()
+
+            if #available(macOS 26, *) {
+                WebView(url: viewModel.url)
+            } else {
+                WebViewView(url: viewModel.url)
+            }
         }
         .overlay {
             RoundedRectangle(cornerRadius: 16)
@@ -80,26 +91,47 @@ struct SafariPreviewView: View {
     }
 }
 
-struct BorderStrokeButtonStyle: ButtonStyle {
-    
-    let cornerRadius: CGFloat
-    
+private extension View {
+    @ViewBuilder
+    func newBackgroundEffect() -> some View {
+        if #available(macOS 26, *) {
+            self
+                .glassEffect(.regular, in: Rectangle())
+        } else {
+            self
+                .background(Color(NSColor.windowBackgroundColor))
+        }
+    }
+}
+
+struct BorderStrokeButtonStyle<S: Shape>: ButtonStyle {
+
+    let shape: S
+
     func makeBody(configuration: Configuration) -> some View {
-        configuration.label
-            .padding(.horizontal, 6)
-            .padding(.vertical, 4)
-            .foregroundStyle(Color(NSColor.controlTextColor))
-            .background(
-                RoundedRectangle(cornerRadius: cornerRadius)
-                    .fill(Color(.controlBackgroundColor))
-            )
-            .overlay {
-                RoundedRectangle(cornerRadius: cornerRadius)
-                    .stroke(Color(NSColor.separatorColor))
-            }
-            .clipShape(
-                RoundedRectangle(cornerRadius: cornerRadius)
-            )
+        if #available(macOS 26, *) {
+            configuration.label
+                .font(.system(size: 14))
+                .padding(.horizontal, 8)
+                .padding(.vertical, 6)
+                .glassEffect(.regular.tint(.blue), in: shape)
+        } else {
+            configuration.label
+                .padding(.horizontal, 6)
+                .padding(.vertical, 4)
+                .foregroundStyle(Color(NSColor.controlTextColor))
+                .background(
+                    shape
+                        .fill(Color(.controlBackgroundColor))
+                )
+                .overlay {
+                    shape
+                        .stroke(Color(NSColor.separatorColor))
+                }
+                .clipShape(
+                    shape
+                )
+        }
     }
 }
 
