@@ -14,13 +14,6 @@ import HotKey
 class SettingsWindowController: NSWindowController {
     
     static func createSettingsWindowController() -> SettingsWindowController {
-//        let storyboard = NSStoryboard(name: NSStoryboard.Name("Main"), bundle: nil)
-//        let identifier = NSStoryboard.SceneIdentifier(stringLiteral: "SettingsWindowController")
-//        guard let windowController = storyboard.instantiateController(withIdentifier: identifier) as? SettingsWindowController else {
-//            fatalError("Failed to load SettingsWindowController of type SettingsWindowController from the Main storyboard.")
-//        }
-//        return windowController
-
         let window = NSWindow(contentViewController: SettingsHostingViewController(rootView: SettingsView()))
         let controller = SettingsWindowController(window: window)
         return controller
@@ -157,6 +150,7 @@ private struct GeneralSettingsView: View {
         }
         .navigationTitle("General")
         .onChange(of: maxStoredItems) { _, newValue in
+            Settings.main.maxHistory = newValue
             State.main.history.setMaxItems(newValue)
         }
         .onChange(of: showsRichText) { _, newValue in
