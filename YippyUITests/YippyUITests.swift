@@ -196,6 +196,27 @@ class YippyUITests: XCTestCase {
         XCTAssertTrue(app.yippyTableView.isDisplayed)
         XCTAssertEqual(app.yippyTableViewItems.count, 5)
     }
+
+    func testNotificationCenterHeaderAndTimeLabelAreVisible() {
+        NSPasteboard.general.declareTypes([.string], owner: nil)
+        NSPasteboard.general.setString("My latest copy", forType: .string)
+
+        app.launchArguments.append("--Settings.testData=a")
+        app.launchArguments.append("--test-dir=A")
+
+        app.launch()
+        app.pressHotKey()
+
+        let header = app.yippyWindow.descendants(matching: .any).matching(identifier: Accessibility.identifiers.yippyHeader).firstMatch
+        let search = app.yippyWindow.descendants(matching: .any).matching(identifier: Accessibility.identifiers.yippySearchField).firstMatch
+        let filters = app.yippyWindow.descendants(matching: .any).matching(identifier: Accessibility.identifiers.yippyCategoryFilter).firstMatch
+        let timeLabel = app.yippyWindow.descendants(matching: .any).matching(identifier: Accessibility.identifiers.yippyNotificationTimeLabel).firstMatch
+
+        XCTAssertTrue(header.waitForExistence(timeout: 2))
+        XCTAssertTrue(search.exists)
+        XCTAssertTrue(filters.exists)
+        XCTAssertTrue(timeLabel.exists)
+    }
     
     func testEnterToPaste() {
         // Copy something
@@ -214,6 +235,31 @@ class YippyUITests: XCTestCase {
         // Open Yippy window
         app.pressHotKey()
         app.typeKey(.return)
+        
+        // Assert item was pasted
+        assertCmdV()
+        
+        // Assert the Yippy window is closed
+        XCTAssertFalse(app.yippyWindow.isDisplayed)
+    }
+    
+    func testCmdVToPaste() {
+        // Copy something
+        NSPasteboard.general.declareTypes([.string], owner: nil)
+        NSPasteboard.general.setString("My latest copy", forType: .string)
+        
+        // Set settings environment
+        app.launchArguments.append("--Settings.testData=a")
+        
+        // Basic app support directory
+        app.launchArguments.append("--test-dir=A")
+        
+        // Launch app
+        app.launch()
+        
+        // Open Yippy window
+        app.pressHotKey()
+        app.typeKey("v", modifierFlags: .command)
         
         // Assert item was pasted
         assertCmdV()

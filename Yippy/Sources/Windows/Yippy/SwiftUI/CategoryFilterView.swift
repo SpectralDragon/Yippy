@@ -38,6 +38,7 @@ struct CategoryFilterView: View {
             .padding(.horizontal, 16)
         }
         .padding(.vertical, 8)
+        .contentShape(Rectangle())
     }
 }
 
@@ -51,10 +52,14 @@ struct CategoryButton: View {
         Button(action: action) {
             if #available(macOS 26.0, *) {
                 buttonLabel
-                .glassEffect(
-                    .clear.tint(backgroundColor).interactive(),
-                    in: Capsule()
-                )
+                    .glassEffect(
+                        .regular.tint(backgroundColor.opacity(isSelected ? 1 : 0.35)).interactive(),
+                        in: Capsule(style: .continuous)
+                    )
+                    .overlay {
+                        Capsule(style: .continuous)
+                            .stroke(borderColor.opacity(isSelected ? 0.45 : 0.18), lineWidth: 1)
+                    }
             } else {
                 buttonLabel
                     .background(backgroundColor)
@@ -79,7 +84,7 @@ struct CategoryButton: View {
             }
 
             Text(displayName)
-                .font(.system(size: 12, weight: .medium))
+                .font(.system(size: 12, weight: .semibold))
 
             if let count = count {
                 Text("\(count)")
@@ -91,7 +96,7 @@ struct CategoryButton: View {
             }
         }
         .padding(.horizontal, 12)
-        .padding(.vertical, 6)
+        .padding(.vertical, 7)
         .foregroundColor(foregroundColor)
     }
 
@@ -101,9 +106,9 @@ struct CategoryButton: View {
     
     private var backgroundColor: Color {
         if isSelected {
-            return category?.color.swiftUIColor.opacity(0.2) ?? Color.accentColor.opacity(0.2)
+            return category?.color.swiftUIColor.opacity(0.22) ?? Color.accentColor.opacity(0.22)
         } else {
-            return Color.clear
+            return Color.white.opacity(0.05)
         }
     }
     
@@ -111,7 +116,7 @@ struct CategoryButton: View {
         if isSelected {
             return category?.color.swiftUIColor ?? Color.accentColor
         } else {
-            return Color.primary
+            return Color.primary.opacity(0.88)
         }
     }
     

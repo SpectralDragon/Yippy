@@ -9,25 +9,23 @@
 import SwiftUI
 
 struct HistoryCellView: View {
-    
-    let item: HistoryItem
+    let snapshot: HistoryRowSnapshot
     let proxy: GeometryProxy
-    let usingItemRtf: Bool
-    
+
     var body: some View {
-        switch item.content {
-        case .thumbnailImage:
-            HistoryFileThumbnailCellView(item: item, proxy: proxy)
+        switch snapshot.contentKind {
+        case .fileThumbnail:
+            HistoryFileThumbnailCellView(snapshot: snapshot, proxy: proxy)
         case .fileIcon:
-            HistoryFileIconCellView(item: item, proxy: proxy)
+            HistoryFileIconCellView(snapshot: snapshot, proxy: proxy)
         case .text:
-            HistoryTextCellView(item: item, proxy: proxy, usingItemRtf: usingItemRtf)
-        case .tiffOrPng:
-            HistoryImageCellView(item: item, proxy: proxy)
+            HistoryTextCellView(snapshot: snapshot, proxy: proxy)
+        case .image:
+            HistoryImageCellView(snapshot: snapshot, proxy: proxy)
         case .color:
-            HistoryColorCellView(item: item)
+            HistoryColorCellView(snapshot: snapshot)
         case .webLink:
-            HistoryWebLinkCellView(item: item, proxy: proxy)
+            HistoryWebLinkCellView(snapshot: snapshot, proxy: proxy)
         }
     }
 }

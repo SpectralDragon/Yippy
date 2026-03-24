@@ -7,35 +7,29 @@
 //
 
 import SwiftUI
-import QuickLook
+import EasySkeleton
 
 struct HistoryFileThumbnailCellView: View {
-    
-    let item: HistoryItem
+    let snapshot: HistoryRowSnapshot
     let proxy: GeometryProxy
-    
+
     @Environment(\.historyCellSettings) private var settings
-    
-    @SwiftUI.State private var isLoading = false
-    @SwiftUI.State private var previewImage: Image?
-    @SwiftUI.State private var attributedPath: AttributedString?
-    
+
     private var width: CGFloat {
         return proxy.size.width - self.settings.padding.xTotal
     }
-    
+
     var body: some View {
         VStack(alignment: .trailing, spacing: 4) {
-            // Thumbnail content
             Group {
-                if self.isLoading {
+                if snapshot.isLoading && snapshot.previewImage == nil {
                     RoundedRectangle(cornerRadius: 7)
                         .frame(width: width, height: Self.imageSize.height)
                         .skeletonable()
                 } else {
                     ZStack {
-                        if let previewImage {
-                            previewImage
+                        if let previewImage = snapshot.previewImage {
+                            Image(nsImage: previewImage)
                                 .resizable()
                                 .scaledToFill()
                                 .frame(width: width, height: Self.imageSize.height)
@@ -44,19 +38,18 @@ struct HistoryFileThumbnailCellView: View {
                         VStack {
 
                             Spacer()
-                            
-                            if let attributedPath {
-                                Text(attributedPath)
+
+                            if let attributedPath = snapshot.displayPath {
+                                Text(AttributedString(attributedPath))
                                     .frame(width: width)
                                     .padding(.all, 8)
                                     .materialBlur(style: .contentBackground, opacity: 0.9)
                             }
                         }
                         .overlay(alignment: .bottomTrailing) {
-                            // Category badge
                             CategoryBadgeView(
-                                category: item.getCategory(),
-                                codeSource: item.getCodeSource()
+                                category: snapshot.category,
+                                codeSource: snapshot.codeSource
                             )
                             .padding(.bottom, 8)
                             .padding(.trailing, 8)
@@ -64,77 +57,38 @@ struct HistoryFileThumbnailCellView: View {
                     }
                     .frame(
                         width: self.width,
-                        height: Self.getItemHeight(for: item, availableWidth: width, settings: settings, proxy: proxy)
+                        height: Self.getItemHeight(for: snapshot, availableWidth: width, settings: settings, proxy: proxy)
                     )
                 }
             }
         }
         .accessibilityIdentifier(Accessibility.identifiers.yippyFileThumbnailCellView)
-        .onAppear(perform: self.onAppear)
-        .setSkeleton($isLoading, animationType: .gradient(Color.yippySkeleton.makeGradient()))
     }
-    
-    // MARK: - Private
-    
-    private func onAppear() {
-        guard let url = item.getFileUrl() else { return }
-        self.isLoading = true
-        
-        self.attributedPath = AttributedString(formatFileUrl(url))
-        
-        DispatchQueue.global(qos: .background).async {
-            let cgImageRef = QLThumbnailImageCreate(kCFAllocatorDefault, url as CFURL, CGSize(width: 200, height: 200), [kQLThumbnailOptionIconModeKey: false, kQLThumbnailOptionScaleFactorKey: 4] as CFDictionary)
-            
-            DispatchQueue.main.async {
-                if let cgImage = cgImageRef?.takeRetainedValue() {
-                    let image = NSImage(cgImage: cgImage, size: CGSize(width: cgImage.width, height: cgImage.height))
-                    self.previewImage = Image(nsImage: image)
-                }
-                else {
-                    ErrorLogger.general.log(YippyError(localizedDescription: "Failed to create thumbnail for file with url '\(url.path)'"))
-                    self.previewImage = nil
-                }
-            }
-            
-            self.isLoading = false
-        }
-    }
-    
+
     private static let fileNamePadding = NSEdgeInsets(top: 10, left: 5, bottom: 10, right: 5)
-    
     private static let imageSize = NSSize(width: 300, height: 200)
-    
     private static let imageTopPadding: CGFloat = 5
-    
+
     private static func getItemHeight(
-        for historyItem: HistoryItem,
+        for snapshot: HistoryRowSnapshot,
         availableWidth: CGFloat,
         settings: HistoryCellSettings,
         proxy: GeometryProxy
     ) -> CGFloat {
-        // Calculate the width of the cell
         let cellWidth = floor(availableWidth)
-        
-        // Calculate the text container width
         let textContainerWidth = cellWidth - settings.contentViewInsets.xTotal - fileNamePadding.xTotal
-        
-        // Create the attributed string
-        let str = formatFileUrl(historyItem.getFileUrl()!)
-        
-        // Calculate the height of the text
+
+        let str = snapshot.displayPath
+            ?? NSAttributedString(string: snapshot.title, attributes: HistoryItemText.itemStringAttributes)
+
         let estHeight = str.calculateSize(withMaxWidth: textContainerWidth).height
-        
-        // Calculate the height of the cell
-        let height = estHeight + settings.contentViewInsets.yTotal + fileNamePadding.yTotal + imageSize.height + imageTopPadding
-        
+
+        let height = estHeight
+            + settings.contentViewInsets.yTotal
+            + fileNamePadding.yTotal
+            + imageSize.height
+            + imageTopPadding
+
         return ceil(height)
     }
-}
-
-// TODO: Move to other place
-
-@inlinable
-@inline(__always)
-public func clamp<T: Comparable>(_ value: T, _ min: T, _ max: T) -> T {
-    return value < min ? (min) : (value > max ? max : value)
 }

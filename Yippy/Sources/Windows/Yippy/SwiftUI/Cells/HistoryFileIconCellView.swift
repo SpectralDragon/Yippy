@@ -9,25 +9,25 @@
 import SwiftUI
 
 struct HistoryFileIconCellView: View {
-    
-    let item: HistoryItem
+    let snapshot: HistoryRowSnapshot
     let proxy: GeometryProxy
-    
+
     @Environment(\.historyCellSettings) private var settings
-    @SwiftUI.State private var image: Image?
-    @SwiftUI.State private var iconFileName: NSAttributedString?
-    
+
     var body: some View {
         VStack(alignment: .trailing, spacing: 4) {
-            // File content
             HStack {
-                if let image {
-                    image
+                if let image = snapshot.previewImage {
+                    Image(nsImage: image)
                         .resizable()
                         .scaledToFill()
                         .frame(width: Self.iconSize.width, height: Self.iconSize.height)
+                } else {
+                    RoundedRectangle(cornerRadius: 8)
+                        .fill(Color.secondary.opacity(0.15))
+                        .frame(width: Self.iconSize.width, height: Self.iconSize.height)
                 }
-                if let iconFileName {
+                if let iconFileName = snapshot.displayPath {
                     Text(AttributedString(iconFileName))
                         .frame(width: width)
                         .padding(.all, 8)
@@ -36,68 +36,45 @@ struct HistoryFileIconCellView: View {
             }
             .frame(
                 width: self.width,
-                height: Self.getItemHeight(for: item, availableWidth: width, proxy: proxy, settings: settings)
+                height: Self.getItemHeight(for: snapshot, availableWidth: width, proxy: proxy, settings: settings)
             )
 
-            // Category badge
             CategoryBadgeView(
-                category: item.getCategory(),
-                codeSource: item.getCodeSource()
+                category: snapshot.category,
+                codeSource: snapshot.codeSource
             )
             .padding(.trailing, 6)
             .padding(.bottom, 6)
         }
-        .onAppear(perform: self.onAppear)
         .accessibilityIdentifier(Accessibility.identifiers.yippyFileIconCellView)
     }
-    
-    // MARK: - Private
-    
-    private func onAppear() {
-        if let icon = item.getFileIcon() {
-            self.image = Image(nsImage: icon)
-        }
-        
-        self.iconFileName = formatFileUrl(item.getFileUrl()!)
-    }
-    
+
     private var width: CGFloat {
         return self.proxy.size.width - settings.padding.xTotal
     }
-    
+
     private static let textContainerInset = NSEdgeInsets(top: 5, left: 5, bottom: 5, right: 5)
     private static let iconViewPadding = NSEdgeInsets(top: 5, left: 5, bottom: 5, right: 5)
     private static let iconSize = NSSize(width: 32, height: 32)
-    
-    private static func getItemHeight(for historyItem: HistoryItem, availableWidth: CGFloat, proxy: GeometryProxy, settings: HistoryCellSettings) -> CGFloat {
-        // Calculate the width of the cell
+
+    private static func getItemHeight(for snapshot: HistoryRowSnapshot, availableWidth: CGFloat, proxy: GeometryProxy, settings: HistoryCellSettings) -> CGFloat {
         let cellWidth = floor(availableWidth)
-        
-        // Calculate the text view height
-        let textViewHeight = getFileNameTextViewHeight(withCellWidth: cellWidth, for: historyItem, settings: settings)
-        
-        // Calculate minimum cell height
+
+        let textViewHeight = getFileNameTextViewHeight(withCellWidth: cellWidth, for: snapshot, settings: settings)
         let minCellHeight = iconSize.height + settings.contentViewInsets.yTotal + iconViewPadding.yTotal
-        
-        // Add the padding back to get the height of the cell
         let height = max(textViewHeight + settings.contentViewInsets.yTotal, minCellHeight)
-        
+
         return ceil(height)
     }
-    
-    private static func getFileNameTextViewHeight(withCellWidth cellWidth: CGFloat, for historyItem: HistoryItem, settings: HistoryCellSettings) -> CGFloat {
-        // Calculate the width of the text container
+
+    private static func getFileNameTextViewHeight(withCellWidth cellWidth: CGFloat, for snapshot: HistoryRowSnapshot, settings: HistoryCellSettings) -> CGFloat {
         let width = cellWidth - settings.contentViewInsets.xTotal - iconSize.width - textContainerInset.xTotal - iconViewPadding.xTotal
-        
-        // Create an attributed string of the text
-        let attrStr = formatFileUrl(historyItem.getFileUrl()!)
-        
-        // Get the max height of the text container
+
+        let attrStr = snapshot.displayPath
+            ?? NSAttributedString(string: snapshot.title, attributes: HistoryItemText.itemStringAttributes)
         let maxTextContainerHeight = Constants.panel.maxCellHeight - settings.contentViewInsets.yTotal - textContainerInset.yTotal
-        
-        // Determine the height of the text view (capping the cell height)
         let estHeight = attrStr.calculateSize(withMaxWidth: width).height
-        
+
         return min(estHeight, maxTextContainerHeight) + textContainerInset.yTotal
     }
 }

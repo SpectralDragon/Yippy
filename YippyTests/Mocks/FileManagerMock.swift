@@ -12,10 +12,20 @@ import XCTest
 class FileManagerMock: FileManager {
     
     var directoryContents = [URL: [URL]?]()
+    var itemAttributes = [String: [FileAttributeKey: Any]]()
     
     var createDirectory = [URL: Bool]()
     
     var removeItem = [URL: Bool]()
+
+    override func fileExists(atPath path: String, isDirectory: UnsafeMutablePointer<ObjCBool>?) -> Bool {
+        let url = URL(fileURLWithPath: path)
+        if let contents = directoryContents[url] {
+            isDirectory?.pointee = ObjCBool(contents != nil)
+            return true
+        }
+        return false
+    }
     
     override func contentsOfDirectory(at url: URL, includingPropertiesForKeys keys: [URLResourceKey]?, options mask: FileManager.DirectoryEnumerationOptions = []) throws -> [URL] {
         if let contents = directoryContents[url] as? [URL] {
@@ -36,5 +46,12 @@ class FileManagerMock: FileManager {
         if removeItem[URL] == nil || removeItem[URL] == false {
             throw NSError(domain: "FileManagerTests", code: 0)
         }
+    }
+
+    override func attributesOfItem(atPath path: String) throws -> [FileAttributeKey : Any] {
+        if let attributes = itemAttributes[path] {
+            return attributes
+        }
+        throw NSError(domain: "FileManagerTests", code: 0)
     }
 }

@@ -9,22 +9,22 @@
 import SwiftUI
 
 struct HistoryColorCellView: View {
-    
-    let item: HistoryItem
+    let snapshot: HistoryRowSnapshot
 
     var body: some View {
         VStack(alignment: .trailing, spacing: 4) {
-            // Color content
             Group {
-                if let color = item.getColor()?.withAlphaComponent(1) {
+                if let color = snapshot.colorValue?.withAlphaComponent(1) {
                     Color(cgColor: color.cgColor)
+                } else {
+                    RoundedRectangle(cornerRadius: 12)
+                        .fill(Color.secondary.opacity(0.15))
                 }
             }
 
-            // Category badge
             CategoryBadgeView(
-                category: item.getCategory(),
-                codeSource: item.getCodeSource()
+                category: snapshot.category,
+                codeSource: snapshot.codeSource
             )
         }
         .accessibilityIdentifier(Accessibility.identifiers.yippyColorCellView)

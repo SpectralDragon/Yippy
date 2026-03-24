@@ -82,6 +82,7 @@ class YippyViewController: NSViewController {
         YippyHotKeys.ctrlDelete.onDown(deleteSelected)
         YippyHotKeys.ctrlSpace.onDown(togglePreview)
 //        YippyHotKeys.cmdBackslash.onDown(focusSearchBar)
+        YippyHotKeys.cmdV.onDown(pasteSelected)
         
         // Paste hot keys
         YippyHotKeys.cmd0.onDown { self.shortcutPressed(key: 0) }
@@ -117,6 +118,7 @@ class YippyViewController: NSViewController {
         bindHotKeyToYippyWindow(YippyHotKeys.cmd9, disposeBag: disposeBag)
         bindHotKeyToYippyWindow(YippyHotKeys.ctrlDelete, disposeBag: disposeBag)
         bindHotKeyToYippyWindow(YippyHotKeys.ctrlSpace, disposeBag: disposeBag)
+        bindHotKeyToYippyWindow(YippyHotKeys.cmdV, disposeBag: disposeBag)
         
         searchBar.resignFirstResponder()
     }

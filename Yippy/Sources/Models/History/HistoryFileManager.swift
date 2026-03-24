@@ -162,14 +162,21 @@ class HistoryFileManager {
                     // Get all the files
                     let dataUrls = try self.fileManager.contentsOfDirectory(at: content, includingPropertiesForKeys: nil)
                     let metaURL = dataUrls.first { $0.lastPathComponent == "meta.json" }
+                    let creationDate = itemCreationDate(at: content)
                     // and create the types
-                    let types = dataUrls.map({NSPasteboard.PasteboardType($0.lastPathComponent)})
-                    items[id] = HistoryItem(
+                    let types = dataUrls
+                        .filter { $0.lastPathComponent != "meta.json" }
+                        .map { NSPasteboard.PasteboardType($0.lastPathComponent) }
+                    let historyItem = HistoryItem(
                         fsId: id,
                         types: types,
                         cache: cache,
-                        metadata: getMeta(from: metaURL)
+                        metadata: getMeta(from: metaURL, fallbackCreatedAt: creationDate)
                     )
+                    if historyItem.metadata == nil {
+                        historyItem.detectAndSetCategory(createdAt: creationDate)
+                    }
+                    items[id] = historyItem
                 }
                 catch {
                     let historyError = YippyError(code: 0, userInfo: [
@@ -222,13 +229,25 @@ class HistoryFileManager {
         return History(cache: cache, items: orderedItems)
     }
 
-    private func getMeta(from url: URL?) -> HistoryItemMetadata? {
+    private func getMeta(from url: URL?, fallbackCreatedAt: Date?) -> HistoryItemMetadata? {
         guard let url else { return nil }
         guard let data = try? Data(contentsOf: url) else {
             return nil
         }
-        let meta = try? JSONDecoder().decode(HistoryItemMetadata.self, from: data)
-        return meta
+        guard let meta = try? JSONDecoder().decode(HistoryItemMetadata.self, from: data) else {
+            return nil
+        }
+        guard meta.createdAt == nil else {
+            return meta
+        }
+        return meta.with(createdAt: fallbackCreatedAt)
+    }
+
+    private func itemCreationDate(at url: URL) -> Date? {
+        guard let attributes = try? fileManager.attributesOfItem(atPath: url.path) else {
+            return nil
+        }
+        return attributes[.creationDate] as? Date
     }
 
     func insertItem(newHistory: [HistoryItem], at i: Int, completionHandler handler: ((Bool) -> Void)? = nil) {

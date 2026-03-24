@@ -39,6 +39,12 @@ class Accessibility {
         static let howToUseLabel = "howToUseLabel"
         
         static let yippyTableView = "yippyTableView"
+        static let yippyHeader = "yippyHeader"
+        static let yippySearchField = "yippySearchField"
+        static let yippyCategoryFilter = "yippyCategoryFilter"
+        static let yippyNotificationCell = "yippyNotificationCell"
+        static let yippyNotificationPrimaryText = "yippyNotificationPrimaryText"
+        static let yippyNotificationTimeLabel = "yippyNotificationTimeLabel"
         static let yippyItemTextView = "YippyItemTextView"
         static let yippyTextCellView = "YippyTextCellView"
         static let yippyColorCellView = "YippyColorCellView"

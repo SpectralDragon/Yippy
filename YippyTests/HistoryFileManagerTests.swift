@@ -613,4 +613,28 @@ class HistoryFileManagerTests: XCTestCase {
         // Should be in the item folder
         XCTAssertEqual(url.deletingLastPathComponent(), itemUrl)
     }
+
+    func testLoadHistoryBackfillsCreatedAtFromDirectoryCreationDate() throws {
+        let itemID = UUID()
+        let itemURL = URL(fileURLWithPath: NSTemporaryDirectory()).appendingPathComponent(itemID.uuidString, isDirectory: true)
+        let metaURL = itemURL.appendingPathComponent("meta.json")
+        let fallbackDate = Date(timeIntervalSince1970: 1_710_000_000)
+        try FileManager.default.createDirectory(at: itemURL, withIntermediateDirectories: true)
+
+        let metadata = HistoryItemMetadata(category: .text, codeSource: nil, createdAt: nil, originBundleId: "com.apple.TextEdit")
+        let data = try JSONEncoder().encode(metadata)
+        try data.write(to: metaURL, options: .atomic)
+        defer { try? FileManager.default.removeItem(at: itemURL) }
+
+        orderManager.order = [itemID.uuidString] as NSArray
+        orderManager.shouldReadSucceed = true
+        fileManager.directoryContents[Constants.urls.history] = [itemURL]
+        fileManager.directoryContents[itemURL] = [metaURL]
+        fileManager.itemAttributes[itemURL.path] = [.creationDate: fallbackDate]
+
+        let history = historyFM.loadHistory(cache: cache)
+
+        XCTAssertEqual(history.items.count, 1)
+        XCTAssertEqual(history.items.first?.createdAt, fallbackDate)
+    }
 }

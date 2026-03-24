@@ -9,28 +9,29 @@
 import SwiftUI
 
 struct HistoryTextCellView: View {
-    
     @Environment(\.historyCellSettings) private var settings
-    
-    let item: HistoryItem
+
+    let snapshot: HistoryRowSnapshot
     let proxy: GeometryProxy
-    let usingItemRtf: Bool
-    
+
     var body: some View {
         VStack(alignment: .trailing, spacing: 4) {
-            // Text content
             HStack(spacing: 0) {
-                Text(AttributedString(HistoryItemText.getAttributedString(forItem: item, usingItemRtf: usingItemRtf)))
-                    .multilineTextAlignment(.leading)
-                
+                if let previewText = snapshot.previewText {
+                    Text(AttributedString(previewText))
+                        .multilineTextAlignment(.leading)
+                } else {
+                    Text(snapshot.title)
+                        .multilineTextAlignment(.leading)
+                        .foregroundStyle(.secondary)
+                }
                 Spacer()
             }
             .padding(settings.textInset)
 
-            // Category badge
             CategoryBadgeView(
-                category: item.getCategory(),
-                codeSource: item.getCodeSource()
+                category: snapshot.category,
+                codeSource: snapshot.codeSource
             )
             .padding(.bottom, 6)
             .padding(.trailing, 6)
@@ -38,11 +39,9 @@ struct HistoryTextCellView: View {
         .frame(
             width: width,
             height: Self.calculateCellHeight(
-                historyItem: item,
-                proxy: proxy,
+                snapshot: snapshot,
                 availableWidth: width,
-                settings: settings,
-                usingItemRtf: usingItemRtf
+                settings: settings
             )
         )
         .accessibilityIdentifier(Accessibility.identifiers.yippyTextCellView)
@@ -70,30 +69,20 @@ struct HistoryTextCellView: View {
     }
     
     private static func calculateCellHeight(
-        historyItem: HistoryItem,
-        proxy: GeometryProxy,
+        snapshot: HistoryRowSnapshot,
         availableWidth: CGFloat,
-        settings: HistoryCellSettings,
-        usingItemRtf: Bool
+        settings: HistoryCellSettings
     ) -> CGFloat {
-        // Calculate the width of the cell
         let cellWidth = floor(availableWidth)
-        
-        // Calculate the width of the text container
         let width = Self.getTextContainerWidth(cellWidth: cellWidth, settings: settings)
-        
-        // Create an attributed string of the text
-        let attrStr = HistoryItemText.getAttributedString(forItem: historyItem, usingItemRtf: Settings.main.showsRichText)
-        
-        // Determine the height of the text
+
+        let attrStr = snapshot.previewText
+            ?? NSAttributedString(string: snapshot.title, attributes: HistoryItemText.itemStringAttributes)
+
         let estTextHeight = attrStr.calculateSize(withMaxWidth: width).height
-        
-        // Add height for category badge (approximately 20 points)
         let categoryBadgeHeight: CGFloat = 20
-        
-        // Add the padding back to get the height of the cell
         let height = Self.getCellHeight(estTextHeight: estTextHeight + categoryBadgeHeight, settings: settings)
-        
+
         return ceil(height)
     }
 }

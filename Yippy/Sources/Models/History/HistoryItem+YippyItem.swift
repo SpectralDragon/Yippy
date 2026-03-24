@@ -11,18 +11,13 @@ import Foundation
 extension HistoryItem {
     
     var content: HistoryItemContent {
-        if getFileUrl() != nil {
-            if getThumbnailImage() != nil {
-                return .thumbnailImage
-            }
-            else {
-                return .fileIcon
-            }
+        if types.contains(.fileURL) {
+            return .thumbnailImage
         }
-        else if getUrl() != nil {
+        else if types.contains(.URL) {
             return .webLink
         }
-        else if getColor() != nil {
+        else if types.contains(.color) {
             return .color
         }
         else if types.contains(.tiff) || types.contains(.png) {

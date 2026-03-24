@@ -140,13 +140,52 @@ enum CodeSource: String, CaseIterable, Codable {
 struct HistoryItemMetadata: Codable {
     let category: HistoryItemCategory
     let codeSource: CodeSource?
-    let detectedAt: Date
+    let createdAt: Date?
     let originBundleId: String?
 
-    init(category: HistoryItemCategory, codeSource: CodeSource? = nil, originBundleId: String? = nil) {
+    init(
+        category: HistoryItemCategory,
+        codeSource: CodeSource? = nil,
+        createdAt: Date? = Date(),
+        originBundleId: String? = nil
+    ) {
         self.category = category
         self.codeSource = codeSource
-        self.detectedAt = Date()
+        self.createdAt = createdAt
         self.originBundleId = originBundleId
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        category = try container.decode(HistoryItemCategory.self, forKey: .category)
+        codeSource = try container.decodeIfPresent(CodeSource.self, forKey: .codeSource)
+        createdAt = try container.decodeIfPresent(Date.self, forKey: .createdAt)
+            ?? container.decodeIfPresent(Date.self, forKey: .detectedAt)
+        originBundleId = try container.decodeIfPresent(String.self, forKey: .originBundleId)
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(category, forKey: .category)
+        try container.encodeIfPresent(codeSource, forKey: .codeSource)
+        try container.encodeIfPresent(createdAt, forKey: .createdAt)
+        try container.encodeIfPresent(originBundleId, forKey: .originBundleId)
+    }
+
+    func with(createdAt: Date?) -> HistoryItemMetadata {
+        HistoryItemMetadata(
+            category: category,
+            codeSource: codeSource,
+            createdAt: createdAt,
+            originBundleId: originBundleId
+        )
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case category
+        case codeSource
+        case createdAt
+        case detectedAt
+        case originBundleId
     }
 }

@@ -9,16 +9,14 @@
 import SwiftUI
 
 struct HistoryImageCellView: View {
-    
-    let item: HistoryItem
+    let snapshot: HistoryRowSnapshot
     let proxy: GeometryProxy
-    
+
     @Environment(\.historyCellSettings) private var settings
 
     var body: some View {
-        // Image content
         Group {
-            if let image = item.getImage() {
+            if let image = snapshot.previewImage {
                 Image(nsImage: image)
                     .resizable()
                     .scaledToFill()
@@ -28,13 +26,12 @@ struct HistoryImageCellView: View {
             }
         }
         .frame(width: width,
-               height: Self.imageHeight(for: item, width: width, proxy: proxy, settings: settings))
+               height: Self.imageHeight(for: snapshot, width: width, proxy: proxy, settings: settings))
         .clipped()
         .overlay(alignment: .bottomTrailing) {
-            // Category badge
             CategoryBadgeView(
-                category: item.getCategory(),
-                codeSource: item.getCodeSource()
+                category: snapshot.category,
+                codeSource: snapshot.codeSource
             )
             .padding(8)
         }
@@ -48,30 +45,23 @@ struct HistoryImageCellView: View {
     }
     
     private static func imageHeight(
-        for historyItem: HistoryItem,
+        for snapshot: HistoryRowSnapshot,
         width: CGFloat,
         proxy: GeometryProxy,
         settings: HistoryCellSettings
     ) -> CGFloat {
-        
         let imagePadding = NSEdgeInsetsZero
-        
-        guard let image = historyItem.getImage() else {
-            return 50
+
+        guard let imageSize = snapshot.previewImageSize else {
+            return min(140, proxy.frame(in: .global).height)
         }
-        
+
         let imageWidth = width - imagePadding.xTotal - settings.contentViewInsets.xTotal
-        
-        // Get max image height based on pixels
-        let maxImageHeight = image.size.height
-        // Calcalute image height
-        let imageHeight = min(image.size.height * imageWidth / image.size.width, maxImageHeight)
-        
-        // Get max height of cell based on visible on visible height
+        let maxImageHeight = imageSize.height
+        let imageHeight = min(imageSize.height * imageWidth / max(imageSize.width, 1), maxImageHeight)
         let maxHeight = proxy.frame(in: .global).height
-        // Calculate cell height
         let height = min(imageHeight + imagePadding.yTotal + settings.contentViewInsets.xTotal, maxHeight)
-        
+
         return ceil(height)
     }
 }

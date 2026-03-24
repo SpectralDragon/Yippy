@@ -17,11 +17,16 @@ final class CategoryDetector {
     private init() {}
     
     /// Detects the category and metadata for a history item
-    func detectCategory(for item: HistoryItem) -> HistoryItemMetadata {
+    func detectCategory(for item: HistoryItem, createdAt: Date? = nil) -> HistoryItemMetadata {
         let codeSource = detectCodeSource(for: item)
         let category = detectCategoryType(for: item, codeSource: codeSource)
 
-        return HistoryItemMetadata(category: category, codeSource: codeSource)
+        return HistoryItemMetadata(
+            category: category,
+            codeSource: codeSource,
+            createdAt: createdAt,
+            originBundleId: item.originBundleId
+        )
     }
     
     /// Detects the main category type for a history item
