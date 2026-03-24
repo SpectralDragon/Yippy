@@ -12,6 +12,12 @@ import RxSwift
 import RxRelay
 
 class YippyWindowController: NSWindowController {
+
+    private var oldApp: NSRunningApplication?
+    private var toggleRelay: BehaviorRelay<Bool>?
+    private var shouldHideOnExternalKeyDown = false
+    private var shouldRestorePreviousAppOnClose = true
+    private var externalKeyDownMonitor: Any?
     
     override func windowDidLoad() {
         super.windowDidLoad()
@@ -19,6 +25,24 @@ class YippyWindowController: NSWindowController {
         window?.level = NSWindow.Level(NSWindow.Level.mainMenu.rawValue - 2)
         window?.setAccessibilityIdentifier(Accessibility.identifiers.yippyWindow)
         window?.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
+
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(windowDidBecomeKeyNotification(_:)),
+            name: NSWindow.didBecomeKeyNotification,
+            object: window
+        )
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(windowDidResignKeyNotification(_:)),
+            name: NSWindow.didResignKeyNotification,
+            object: window
+        )
+        externalKeyDownMonitor = NSEvent.addGlobalMonitorForEvents(matching: .keyDown) { [weak self] _ in
+            DispatchQueue.main.async {
+                self?.hideOnExternalTypingIfNeeded()
+            }
+        }
     }
     
     static func createYippyWindowController() -> YippyWindowController {
@@ -31,17 +55,24 @@ class YippyWindowController: NSWindowController {
         return windowController
     }
     
-    private var oldApp: NSRunningApplication?
+    deinit {
+        NotificationCenter.default.removeObserver(self)
+        if let externalKeyDownMonitor {
+            NSEvent.removeMonitor(externalKeyDownMonitor)
+        }
+    }
     
     func subscribeTo(toggle: BehaviorRelay<Bool>) -> Disposable {
+        toggleRelay = toggle
         return toggle
             .subscribe(onNext: {
                 [] in
                 if !$0 {
-                    self.close()
-                    self.oldApp?.activate(options: .activateIgnoringOtherApps)
+                    self.hideWindow(reactivatePreviousApp: self.shouldRestorePreviousAppOnClose)
                 }
                 else {
+                    self.shouldRestorePreviousAppOnClose = true
+                    self.shouldHideOnExternalKeyDown = false
                     self.oldApp = NSWorkspace.shared.frontmostApplication
                     self.showWindow(nil)
                     self.window?.makeKey()
@@ -55,5 +86,38 @@ class YippyWindowController: NSWindowController {
             (position, screen) in
             self.window?.setFrame(position.getFrame(forScreen: screen), display: true)
         })
+    }
+
+    @objc private func windowDidBecomeKeyNotification(_ notification: Notification) {
+        shouldHideOnExternalKeyDown = false
+    }
+
+    @objc private func windowDidResignKeyNotification(_ notification: Notification) {
+        guard window?.isVisible == true else { return }
+        shouldHideOnExternalKeyDown = true
+    }
+
+    private func hideOnExternalTypingIfNeeded() {
+        guard shouldHideOnExternalKeyDown else { return }
+        guard window?.isVisible == true else {
+            shouldHideOnExternalKeyDown = false
+            return
+        }
+        guard window?.isKeyWindow == false else {
+            shouldHideOnExternalKeyDown = false
+            return
+        }
+
+        shouldRestorePreviousAppOnClose = false
+        toggleRelay?.accept(false)
+    }
+
+    private func hideWindow(reactivatePreviousApp: Bool) {
+        shouldHideOnExternalKeyDown = false
+        shouldRestorePreviousAppOnClose = true
+        self.close()
+        if reactivatePreviousApp {
+            self.oldApp?.activate(options: .activateIgnoringOtherApps)
+        }
     }
 }

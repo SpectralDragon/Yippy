@@ -299,12 +299,12 @@ struct YippyHistoryTableView: View {
                         .stroke(Color.accentColor, lineWidth: 6)
                     }
                 }
-                .contentShape(
-                    RoundedRectangle(
-                        cornerRadius: NSApplication.isMacOS26 ? 16 : 7,
-                        style: .continuous
-                    )
-                )
+//                .contentShape(
+//                    RoundedRectangle(
+//                        cornerRadius: NSApplication.isMacOS26 ? 16 : 7,
+//                        style: .continuous
+//                    )
+//                )
                 .onAppear {
                     viewModel.loadNextPageIfNeeded(currentItemID: item.id)
                     viewModel.prepareRowIfNeeded(for: item.id)
@@ -331,8 +331,10 @@ struct YippyHistoryTableView: View {
 
     @available(macOS 26.0, *)
     private func notificationCenterHistory(proxy: GeometryProxy) -> some View {
-        ScrollView(viewModel.panelPosition, showsIndicators: false) {
-            if viewModel.panelPosition == .horizontal {
+        let axis = viewModel.panelPosition
+
+        return ScrollView(viewModel.panelPosition, showsIndicators: false) {
+            if axis == Axis.Set.horizontal {
                 LazyHStack(spacing: NotificationCenterStyle.cardSpacing) {
                     ForEach(Array(viewModel.visibleItems.enumerated()), id: \.element) { visibleIndex, item in
                         let index = viewModel.index(for: item) ?? visibleIndex
@@ -369,6 +371,7 @@ struct YippyHistoryTableView: View {
                 .padding(.vertical, 8)
             }
         }
+        .coordinateSpace(name: NotificationCenterStyle.scrollCoordinateSpace)
         .contentShape(Rectangle())
     }
 
@@ -387,6 +390,7 @@ struct YippyHistoryTableView: View {
         )
         .id(item)
         .contentShape(RoundedRectangle(cornerRadius: NotificationCenterStyle.cardRadius, style: .continuous))
+        .notificationCenterStackingEffect(axis: viewModel.panelPosition, viewportSize: proxy.size)
         .onAppear {
             viewModel.loadNextPageIfNeeded(currentItemID: item.id)
             viewModel.prepareRowIfNeeded(for: item.id)
@@ -446,6 +450,10 @@ private enum NotificationCenterStyle {
     static let headerRadius: CGFloat = 28
     static let cardRadius: CGFloat = 24
     static let previewRadius: CGFloat = 18
+    static let scrollCoordinateSpace = "notification-center-history-scroll"
+    static let stackZone: CGFloat = 108
+    static let stackOffset: CGFloat = 30
+    static let stackScale: CGFloat = 0.1
     static let panelShape = RoundedRectangle(cornerRadius: 36, style: .continuous)
 }
 
@@ -609,7 +617,6 @@ private struct YippyNotificationCell: View {
     }
 }
 
-@available(macOS 26.0, *)
 private extension HistoryRowSnapshot {
     var accessibilityIdentifier: String {
         switch contentKind {
@@ -666,6 +673,66 @@ private extension View {
                     RoundedRectangle(cornerRadius: 7)
                         .fill(Color(NSColor.windowBackgroundColor))
                 )
+        }
+    }
+}
+
+@available(macOS 26.0, *)
+private extension View {
+    func notificationCenterStackingEffect(axis: Axis.Set, viewportSize: CGSize) -> some View {
+        visualEffect { content, geometryProxy in
+            let frame = geometryProxy.frame(in: .named(NotificationCenterStyle.scrollCoordinateSpace))
+            let transform = NotificationCenterStyle.stackTransform(
+                for: frame,
+                axis: axis,
+                viewportSize: viewportSize
+            )
+
+            return content
+                .scaleEffect(transform.scale, anchor: transform.anchor)
+                .offset(x: transform.offset.width, y: transform.offset.height)
+        }
+    }
+}
+
+@available(macOS 26.0, *)
+private extension NotificationCenterStyle {
+    struct StackTransform {
+        let scale: CGFloat
+        let offset: CGSize
+        let anchor: UnitPoint
+    }
+
+    static func stackTransform(for frame: CGRect, axis: Axis.Set, viewportSize: CGSize) -> StackTransform {
+        let isHorizontal = axis == Axis.Set.horizontal
+        let viewportLength = isHorizontal ? viewportSize.width : viewportSize.height
+        let leadingEdge = isHorizontal ? frame.minX : frame.minY
+        let trailingEdge = viewportLength - (isHorizontal ? frame.maxX : frame.maxY)
+
+        let leadingProgress = edgeProgress(for: leadingEdge)
+        let trailingProgress = edgeProgress(for: trailingEdge)
+        let strongestProgress = max(leadingProgress, trailingProgress)
+        let signedOffset = (trailingProgress - leadingProgress) * stackOffset
+
+        return StackTransform(
+            scale: 1 - (strongestProgress * stackScale),
+            offset: isHorizontal
+                ? CGSize(width: signedOffset, height: 0)
+                : CGSize(width: 0, height: signedOffset),
+            anchor: anchor(for: axis, leadingProgress: leadingProgress, trailingProgress: trailingProgress)
+        )
+    }
+
+    private static func edgeProgress(for distance: CGFloat) -> CGFloat {
+        let normalized = 1 - (max(distance, 0) / stackZone)
+        return pow(min(max(normalized, 0), 1), 1.2)
+    }
+
+    private static func anchor(for axis: Axis.Set, leadingProgress: CGFloat, trailingProgress: CGFloat) -> UnitPoint {
+        if axis == Axis.Set.horizontal {
+            return leadingProgress >= trailingProgress ? .leading : .trailing
+        } else {
+            return leadingProgress >= trailingProgress ? .top : .bottom
         }
     }
 }
